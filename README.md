@@ -11,15 +11,17 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 
 ## 🚀 Features
 
-### Current (v1.0.0 - Authentication)
+### Current (v1.1.0 - Authentication & Profile Onboarding)
 * **Secure Google Sign-In**: Powered by Firebase client authentication popup.
 * **Backend Verification**: ID Tokens are verified server-side using the Firebase Admin SDK to ensure security.
 * **Automatic User Provisioning**: Searches PostgreSQL for existing accounts; automatically provisions new user profiles.
 * **Modern JWT Authentication**: Custom signed application JSON Web Tokens (JJWT 0.12.6) for subsequent requests.
-* **Responsive B&W Theme**: A premium, minimalist Black and White user interface for authentication and profile dashboard states.
+* **User Profile Management**: REST API endpoints (`GET /api/user/me` and `PUT /api/user/me`) with custom Spring validations (exact 10-digit phone, max 250-character bio, LinkedIn, and GitHub URLs validation).
+* **Mandatory First-Time Setup**: Automatic routing redirect logic locking dashboard access until users submit graduation details.
+* **Dynamic Dropdown Selectors**: Department-based Section options (e.g. CSE -> A/B/C/D, CST -> No Section).
+* **Responsive B&W Profile Dashboard**: Minimalist UI for viewing and updating user details.
 
 ### Planned Community Features
-* **Profile Onboarding**: Custom flows to associate users with specific graduation Batches, Departments, and Sections.
 * **Classmate Directories**: View contact information restricted only to classmates within the same Batch + Department + Section.
 * **Rich Media Feed**: Share posts, like, and write comments.
 * **Cloudinary Image Uploads**: High-performance image hosting for posts and profile pictures.
@@ -160,7 +162,7 @@ Copy `backend/.env.example` to `backend/.env` and fill in:
 ## 🗺️ Roadmap
 - [x] Initial Project Setup (Next.js 16 & Spring Boot 3)
 - [x] Complete Google OAuth Authentication (Firebase Admin & JWT)
-- [ ] Onboarding Profile Details (Batch, Department, Section)
+- [x] Mandatory First-time Profile Setup & Onboarding Flow
 - [ ] Classmate restricted directory listing
 - [ ] Photo uploads & Cloudinary integration
 - [ ] Social Feed (Posts, Comments, Likes)

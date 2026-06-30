@@ -10,21 +10,23 @@ Alumni Hub is built using a decoupled Client-Server architecture. This document 
 The client follows a clean layout exploiting Next.js App Router:
 * **`app/`**: Implements routing.
   - `page.tsx` (Login): Collects credentials and initializes Firebase popups.
-  - `dashboard/` (Protected page): Placeholder profile view checking state on load.
+  - `dashboard/` (Profile page): Displays authenticated user profile data fetched dynamically.
+  - `dashboard/edit/` (Edit page): Provides validated inputs and dropdowns to update details.
+  - `profile/setup/` (Setup page): Mandatory onboarding form displaying read-only details alongside Batch, Department, and dynamic Section dropdown selectors.
 * **`components/`**: Reusable component structures.
 * **`lib/`**: External sdk configs.
   - `firebase.ts` parses client parameters and exports Auth provider models.
 * **`services/`**: Communication and token storage clients.
-  - `authService.ts` wraps HTTP requests to the backend and handles token caching.
+  - `authService.ts` wraps HTTP requests to the backend (login, getProfile, updateProfile) and handles token caching.
 
 ### 2. Backend Architecture (Spring Boot 3)
 The backend is structured into standard enterprise layers:
-* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes REST routing patterns.
-* **Service (`service/`)**: Houses transaction boundaries and authentication pipelines.
-* **Repository (`repository/`)**: Spring Data JPA query interface.
-* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs.
-* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications.
-* **Security & Config (`security/`, `config/`)**: Manages CORS headers, Spring security permissions, JWT interceptor filters, and Firebase Admin credentials.
+* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`) and profile (`UserController`) REST endpoints.
+* **Service (`service/`)**: Houses transaction boundaries and business logic (`AuthService`, `UserService`).
+* **Repository (`repository/`)**: Spring Data JPA query interface (`UserRepository`).
+* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs (`User`).
+* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications (`UserDto`, `UserProfileUpdateDto`, `AuthRequest`, `AuthResponse`).
+* **Security & Config (`security/`, `config/`)**: Manages CORS headers, Spring security permissions, JWT interceptor filters (`JwtFilter`), and Firebase Admin credentials.
 
 ---
 

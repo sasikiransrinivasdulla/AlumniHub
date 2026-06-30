@@ -61,7 +61,8 @@ cd backend
 ```
 The test suite performs the following validations:
 - **`AlumniHubApplicationTests.contextLoads`**: Assures Hibernate, Hikari, PostgreSQL connection drivers, and Firebase configurations load successfully.
-- **`AuthControllerTest.testGoogleAuthentication_NewUser_CreatesUserAndReturnsJwt`**: Mocks the Firebase Admin SDK token decryption, verifies dynamic user creation in PostgreSQL, resolves the onboarding status to `PENDING_ONBOARDING`, and verifies the JWT token return structure.
+- **`AuthControllerTest`**: Mocks the Firebase Admin SDK token decryption, verifies dynamic user creation in PostgreSQL, resolves the onboarding status to `PENDING_ONBOARDING`, and verifies the JWT token return structure.
+- **`UserControllerTest`**: Tests profile fetching (`GET /api/user/me`), success path profile updates (`PUT /api/user/me`), inputs validation enforcement (such as exactly 10-digit phone numbers, max 250-character bio length, valid LinkedIn and GitHub URL patterns), and unauthenticated endpoint rejection.
 
 ---
 

@@ -82,9 +82,9 @@ public class AuthService {
         // 3. Generate our application JWT
         String jwtToken = jwtUtil.generateToken(user);
 
-        // 4. Onboarding status (pending if section/department/batch is not set)
+        // 4. Onboarding status (pending if profileCompleted is false, or batch/department are missing)
         String authStatus = "ONBOARDED";
-        if (isNewUser || user.getBatch() == null || user.getDepartment() == null || user.getSection() == null) {
+        if (isNewUser || !Boolean.TRUE.equals(user.getProfileCompleted()) || user.getBatch() == null || user.getDepartment() == null) {
             authStatus = "PENDING_ONBOARDING";
         }
 

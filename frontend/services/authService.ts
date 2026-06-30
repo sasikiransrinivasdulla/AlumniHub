@@ -10,6 +10,9 @@ export interface UserProfile {
   bio: string | null;
   currentPosition: string | null;
   phoneNumber: string | null;
+  linkedinUrl: string | null;
+  githubUrl: string | null;
+  profileCompleted: boolean;
   role: string;
   createdAt: string;
   updatedAt: string;
@@ -78,3 +81,55 @@ export const clearAuth = () => {
     localStorage.removeItem("alumni_hub_user");
   }
 };
+
+export async function getUserProfile(): Promise<UserProfile> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("No authentication token found.");
+  }
+
+  const response = await fetch(`${API_URL}/api/user/me`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 403 || response.status === 401) {
+      clearAuth();
+    }
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to load user profile.");
+  }
+
+  const user = await response.json();
+  setAuthUser(user);
+  return user;
+}
+
+export async function updateUserProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("No authentication token found.");
+  }
+
+  const response = await fetch(`${API_URL}/api/user/me`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to update profile.");
+  }
+
+  const updatedUser = await response.json();
+  setAuthUser(updatedUser);
+  return updatedUser;
+}
+

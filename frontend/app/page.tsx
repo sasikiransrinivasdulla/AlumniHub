@@ -28,8 +28,12 @@ export default function Login() {
       setAuthToken(authData.token);
       setAuthUser(authData.user);
       
-      // 5. Redirect to Dashboard
-      router.push("/dashboard");
+      // 5. Redirect to setup or dashboard based on onboarding status
+      if (authData.authStatus === "PENDING_ONBOARDING" || !authData.user.profileCompleted) {
+        router.push("/profile/setup");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       console.error("Login flow failed:", err);
       // Capture authentication errors and display in a user friendly format

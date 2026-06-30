@@ -47,6 +47,13 @@ public class User {
 
     private String phoneNumber;
 
+    private String linkedinUrl;
+
+    private String githubUrl;
+
+    private Boolean profileCompleted = false;
+
+
     @Column(nullable = false)
     private String role; // e.g. "USER", "ADMIN"
 
@@ -58,3 +65,4 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 }
+
