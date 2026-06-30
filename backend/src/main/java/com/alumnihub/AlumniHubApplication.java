@@ -10,8 +10,11 @@ import java.util.List;
 @SpringBootApplication
 public class AlumniHubApplication {
 
-    public static void main(String[] args) {
+    static {
         loadEnv();
+    }
+
+    public static void main(String[] args) {
         SpringApplication.run(AlumniHubApplication.class, args);
     }
 
