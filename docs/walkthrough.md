@@ -64,6 +64,7 @@ The test suite performs the following validations:
 - **`AuthControllerTest`**: Mocks the Firebase Admin SDK token decryption, verifies dynamic user creation in PostgreSQL, resolves the onboarding status to `PENDING_ONBOARDING`, and verifies the JWT token return structure.
 - **`UserControllerTest`**: Tests profile fetching (`GET /api/user/me`), success path profile updates (`PUT /api/user/me`), inputs validation enforcement (such as exactly 10-digit phone numbers, max 250-character bio length, valid LinkedIn and GitHub URL patterns, trailing slashes, conditional GitHub requirement checks based on selected department, and new Instagram URL validations), and unauthenticated endpoint rejection.
 - **`PostControllerTest`**: Asserts post creation (`POST /api/posts`), academic community filtering for custom feed displays (`GET /api/posts/feed`), and detail-level visibility enforcement (`GET /api/posts/{id}`) returning 403 Forbidden for unauthorized requests.
+- **`LikeCommentControllerTest`**: Asserts likes toggling behavior, comment submission, character length constraints, and comment deletion restricted to comment owners.
 
 ---
 

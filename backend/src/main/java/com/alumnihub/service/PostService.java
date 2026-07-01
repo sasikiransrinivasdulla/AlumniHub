@@ -6,6 +6,7 @@ import com.alumnihub.entity.Post;
 import com.alumnihub.entity.User;
 import com.alumnihub.repository.PostRepository;
 import com.alumnihub.repository.UserRepository;
+import com.alumnihub.repository.LikeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final LikeRepository likeRepository;
 
     @Transactional
     public PostDto createPost(String email, PostCreateDto createDto) {
@@ -37,7 +39,7 @@ public class PostService {
                 .build();
 
         Post savedPost = postRepository.save(post);
-        return convertToDto(savedPost);
+        return convertToDto(savedPost, user);
     }
 
     public List<PostDto> getFeedForUser(String email) {
@@ -55,7 +57,7 @@ public class PostService {
             posts = postRepository.findAllByUserBatchAndUserDepartmentAndUserSectionOrderByCreatedAtDesc(batch, dept, sec);
         }
 
-        return posts.stream().map(this::convertToDto).collect(Collectors.toList());
+        return posts.stream().map(p -> convertToDto(p, user)).collect(Collectors.toList());
     }
 
     public PostDto getPostById(String email, UUID postId) {
@@ -83,11 +85,13 @@ public class PostService {
             throw new AccessDeniedException("You do not belong to the academic community authorized to view this post.");
         }
 
-        return convertToDto(post);
+        return convertToDto(post, requestingUser);
     }
 
-    private PostDto convertToDto(Post post) {
+    private PostDto convertToDto(Post post, User requestingUser) {
         User creator = post.getUser();
+        boolean likedByMe = requestingUser != null && likeRepository.existsByPostAndUser(post, requestingUser);
+
         return PostDto.builder()
                 .id(post.getId())
                 .userId(creator.getId())
@@ -98,6 +102,7 @@ public class PostService {
                 .caption(post.getCaption())
                 .likesCount(post.getLikesCount())
                 .commentsCount(post.getCommentsCount())
+                .likedByMe(likedByMe)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
                 .build();

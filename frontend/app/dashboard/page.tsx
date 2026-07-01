@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMemoriesFeed, createPost, Post } from "@/services/postService";
+import { toggleLike, getComments, addComment, deleteComment, CommentDto } from "@/services/likeCommentService";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,12 +15,20 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
 
-  // Modal and post submission states
+  // Share Memory Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  // Comments Modal States
+  const [activePostForComments, setActivePostForComments] = useState<Post | null>(null);
+  const [comments, setComments] = useState<CommentDto[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newCommentText, setNewCommentText] = useState("");
+  const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -83,6 +92,101 @@ export default function Dashboard() {
       setModalError(err.message || "Failed to create post.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleLikeToggle = async (postId: string) => {
+    try {
+      const result = await toggleLike(postId);
+      setPosts(prevPosts =>
+        prevPosts.map(p =>
+          p.id === postId
+            ? { ...p, likedByMe: result.liked, likesCount: result.likesCount }
+            : p
+        )
+      );
+    } catch (err: any) {
+      console.error("Failed to toggle like:", err);
+    }
+  };
+
+  const handleOpenCommentsModal = async (post: Post) => {
+    setActivePostForComments(post);
+    setCommentsLoading(true);
+    setCommentSubmitError(null);
+    setNewCommentText("");
+    try {
+      const list = await getComments(post.id);
+      setComments(list);
+    } catch (err: any) {
+      console.error("Failed to fetch comments:", err);
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activePostForComments) return;
+    setCommentSubmitError(null);
+
+    const commentVal = newCommentText.trim();
+    if (!commentVal) {
+      setCommentSubmitError("Comment must not be empty.");
+      return;
+    }
+    if (commentVal.length > 500) {
+      setCommentSubmitError("Comment must not exceed 500 characters.");
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      const created = await addComment(activePostForComments.id, commentVal);
+      setComments([created, ...comments]);
+      setNewCommentText("");
+
+      // Increment comments count on feed page dynamically
+      setPosts(prevPosts =>
+        prevPosts.map(p =>
+          p.id === activePostForComments.id
+            ? { ...p, commentsCount: p.commentsCount + 1 }
+            : p
+        )
+      );
+      // Update local post count reference
+      setActivePostForComments({
+        ...activePostForComments,
+        commentsCount: activePostForComments.commentsCount + 1
+      });
+    } catch (err: any) {
+      setCommentSubmitError(err.message || "Failed to submit comment.");
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!activePostForComments) return;
+    try {
+      await deleteComment(commentId);
+      setComments(comments.filter(c => c.id !== commentId));
+
+      // Decrement comments count on feed page dynamically
+      setPosts(prevPosts =>
+        prevPosts.map(p =>
+          p.id === activePostForComments.id
+            ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
+            : p
+        )
+      );
+      // Update local post count reference
+      setActivePostForComments({
+        ...activePostForComments,
+        commentsCount: Math.max(0, activePostForComments.commentsCount - 1)
+      });
+    } catch (err: any) {
+      console.error("Failed to delete comment:", err);
     }
   };
 
@@ -316,10 +420,33 @@ export default function Dashboard() {
                       {post.caption}
                     </p>
 
-                    {/* Likes & Comments Counters */}
-                    <div className="flex space-x-6 text-[10px] tracking-wider text-neutral-500 pt-2 border-t border-neutral-900/50">
-                      <span>{post.likesCount} Likes</span>
-                      <span>{post.commentsCount} Comments</span>
+                    {/* Likes & Comments Counters & Action buttons */}
+                    <div className="flex items-center justify-between text-[10px] tracking-wider text-neutral-500 pt-2 border-t border-neutral-900/50">
+                      <div className="flex space-x-6">
+                        <span>{post.likesCount} Likes</span>
+                        <button 
+                          onClick={() => handleOpenCommentsModal(post)}
+                          className="hover:text-white"
+                        >
+                          {post.commentsCount} Comments
+                        </button>
+                      </div>
+                      <div className="flex space-x-4">
+                        <button
+                          onClick={() => handleLikeToggle(post.id)}
+                          className="flex items-center space-x-1 px-3 py-1 bg-neutral-900 border border-neutral-800 text-xs text-white hover:border-neutral-500 transition-colors duration-200"
+                        >
+                          <span>{post.likedByMe ? "❤️" : "🤍"}</span>
+                          <span>Like</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenCommentsModal(post)}
+                          className="flex items-center space-x-1 px-3 py-1 bg-neutral-900 border border-neutral-800 text-xs text-white hover:border-neutral-500 transition-colors duration-200"
+                        >
+                          <span>💬</span>
+                          <span>Comment</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -401,6 +528,118 @@ export default function Dashboard() {
               </div>
 
             </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* Comments List Modal */}
+      {activePostForComments && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-neutral-950 border border-neutral-800 p-6 md:p-8 space-y-6 shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            {/* Modal Title & Stats */}
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-md font-light tracking-widest uppercase">Comments</h2>
+                <p className="text-[10px] tracking-wider text-neutral-500 mt-1">
+                  Post by {activePostForComments.userFullName} • {activePostForComments.commentsCount} Comments
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePostForComments(null)}
+                className="text-neutral-500 hover:text-white text-xs uppercase tracking-widest border border-neutral-800 hover:border-white px-3 py-1"
+              >
+                Close
+              </button>
+            </div>
+
+            {/* Comment Form */}
+            <form onSubmit={handleAddComment} className="space-y-3">
+              {commentSubmitError && (
+                <div className="p-2 bg-red-950/20 border border-red-900/50 text-red-500 text-[10px] tracking-wider">
+                  {commentSubmitError}
+                </div>
+              )}
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  maxLength={500}
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  placeholder="Add a comment... (max 500 chars)"
+                  className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-xs p-3"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={submittingComment}
+                  className="bg-white text-black text-xs font-semibold tracking-widest uppercase px-6 hover:bg-neutral-200 disabled:opacity-50"
+                >
+                  {submittingComment ? "Posting..." : "Post"}
+                </button>
+              </div>
+            </form>
+
+            {/* Comment List */}
+            <div className="flex-1 overflow-y-auto min-h-[200px] border border-neutral-900 bg-neutral-950/40 p-4 space-y-4">
+              {commentsLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <span className="text-xs text-neutral-500 tracking-widest uppercase animate-pulse">Loading Comments...</span>
+                </div>
+              ) : comments.length === 0 ? (
+                <div className="flex justify-center items-center h-32 text-neutral-600 text-xs">
+                  <span>No comments yet.</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex items-start justify-between border-b border-neutral-900 pb-3 gap-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-neutral-800 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                          {comment.userProfilePicture ? (
+                            <Image
+                              src={comment.userProfilePicture}
+                              alt={comment.userFullName}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="text-xs text-neutral-500 font-light">
+                              {comment.userFullName.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-baseline space-x-2">
+                            <span className="text-xs font-semibold text-white tracking-wide">{comment.userFullName}</span>
+                            {comment.userCurrentPosition && (
+                              <span className="text-[9px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
+                            )}
+                          </div>
+                          <span className="text-[9px] text-neutral-500 block">{formatTime(comment.createdAt)}</span>
+                          <p className="text-xs font-light text-neutral-200 mt-1.5 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
+                        </div>
+                      </div>
+
+                      {/* Delete comment option (owner only) */}
+                      {comment.userId === user.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-neutral-500 hover:text-red-500 text-[10px] tracking-wider uppercase border border-transparent hover:border-red-900/50 px-2 py-1 flex-shrink-0"
+                          title="Delete Comment"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
           </div>
         </div>

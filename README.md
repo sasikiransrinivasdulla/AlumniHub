@@ -11,7 +11,12 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 
 ## 🚀 Features
 
-### Current (v1.2.0 - Onboarding & Memories Feed)
+### Current (v1.3.0 - Likes & Comments System)
+* **Likes and Comments System**:
+  - **Likes**: Exposes `POST /api/posts/{postId}/like` (toggles user's like state on/off) and `GET /api/posts/{postId}/likes/count`.
+  - **Comments**: Exposes `POST /api/posts/{postId}/comments` (adds comments up to 500 chars), `GET /api/posts/{postId}/comments`, and `DELETE /api/comments/{commentId}`.
+  - **Ownership Verification**: Comment deletion is strictly limited to the comment owner.
+  - **Community Rule Enforcement**: Likes and comments are rejected with `403 Forbidden` if a user attempts to interact with a post outside their batch, department, or section community.
 * **Alumni Memories Feed**: Exposes REST APIs (`POST /api/posts`, `GET /api/posts/feed`, and `GET /api/posts/{id}`) to share and browse memories.
 * **Community-Based Visibility Restrictions**:
   - `CST` and `ECT`: Feed is visible strictly to users matching Batch + Department.
@@ -25,11 +30,10 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 * **Branch-Based Conditional Validation**: GitHub profile URL is conditionally required for software-related branches (`CSE`, `CST`, `AIML`, `CAI`) and optional for all other branches.
 * **Mandatory First-Time Setup**: Automatic routing redirect logic locking dashboard access until users submit graduation details.
 * **Dynamic Dropdown Selectors**: Department-based Section options (e.g. CSE -> A/B/C/D, CST -> No Section).
-* **Responsive B&W Memories Dashboard**: Split-column layout displaying user info card next to recent community memories feed, with a "Share a Memory" submission modal.
+* **Responsive B&W Memories Dashboard**: Split-column layout displaying user info card next to recent community memories feed, with a "Share a Memory" submission modal. Includes a responsive comments section modal supporting real-time likes toggling, scrolling comments list sorted newest first, comment submission, and deletion of own comments.
 
 ### Planned Community Features
 * **Classmate Directories**: View contact information restricted only to classmates within the same Batch + Department + Section.
-* **Likes & Comments**: Interactive features for posts in the feed.
 * **Cloudinary Image Uploads**: High-performance image hosting for posts and profile pictures.
 
 ---

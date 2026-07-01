@@ -11,17 +11,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostDto {
+public class CommentDto {
     private UUID id;
     private UUID userId;
     private String userFullName;
     private String userProfilePicture;
     private String userCurrentPosition;
-    private String imageUrl;
-    private String caption;
-    private int likesCount;
-    private int commentsCount;
-    private boolean likedByMe;
+    private String comment;
     private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

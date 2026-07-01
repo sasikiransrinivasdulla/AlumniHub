@@ -12,6 +12,7 @@ export interface Post {
   caption: string;
   likesCount: number;
   commentsCount: number;
+  likedByMe: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -223,6 +223,100 @@ Retrieves details of a single post by its ID. Requires user to belong to the pos
 
 ---
 
+## ❤️ Likes & Comments Endpoints
+
+### Toggle Like
+Liking and unliking a post (Toggle behavior).
+
+* **Endpoint**: `/api/posts/{postId}/like`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**:
+```json
+{
+  "liked": true,
+  "likesCount": 1
+}
+```
+
+---
+
+### Fetch Likes Count
+Gets total like count for a post.
+
+* **Endpoint**: `/api/posts/{postId}/likes/count`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Body**: `1` (Integer)
+
+---
+
+### Add Comment
+Adds a new comment text to a post.
+
+* **Endpoint**: `/api/posts/{postId}/comments`
+* **HTTP Method**: `POST`
+* **Content-Type**: `application/json`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Request Payload
+```json
+{
+  "comment": "Congratulations!"
+}
+```
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**:
+```json
+{
+  "id": "e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "userId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "userFullName": "John Doe",
+  "userProfilePicture": "https://lh3.googleusercontent.com/...",
+  "userCurrentPosition": "Software Engineer",
+  "comment": "Congratulations!",
+  "createdAt": "2026-07-01T15:35:00.000"
+}
+```
+
+---
+
+### Fetch Comments
+Retrieves all comments associated with a post sorted by newest first.
+
+* **Endpoint**: `/api/posts/{postId}/comments`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**: Array of Comment objects.
+
+---
+
+### Delete Comment
+Deletes an existing comment. Strictly authorized to the comment owner.
+
+* **Endpoint**: `/api/comments/{commentId}`
+* **HTTP Method**: `DELETE`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
 ## ❌ Error Responses
 
 ### Bad Request / Input Validation Failures
