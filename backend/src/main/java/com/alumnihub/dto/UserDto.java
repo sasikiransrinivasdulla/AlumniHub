@@ -25,6 +25,7 @@ public class UserDto {
     private String phoneNumber;
     private String linkedinUrl;
     private String githubUrl;
+    private String instagramUrl;
     private Boolean profileCompleted;
     private String role;
     private LocalDateTime createdAt;

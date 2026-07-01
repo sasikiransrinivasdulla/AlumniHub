@@ -34,7 +34,10 @@ public class UserProfileUpdateDto {
     @Pattern(regexp = "^$|^(https?://)?([a-zA-Z0-9-]+\\.)?linkedin\\.com/.*$", message = "Must be a valid LinkedIn URL")
     private String linkedinUrl;
 
-    @Pattern(regexp = "^$|^(https?://)?(www\\.)?github\\.com/.*$", message = "Must be a valid GitHub URL")
+    @Pattern(regexp = "^$|^(https?://)?(www\\.)?github\\.com/[a-zA-Z0-9_-]+/?$", message = "Must be a valid GitHub URL")
     private String githubUrl;
+
+    @Pattern(regexp = "^$|^(https?://)?(www\\.)?instagram\\.com/[a-zA-Z0-9_.]+/?$", message = "Must be a valid Instagram URL")
+    private String instagramUrl;
 
 }

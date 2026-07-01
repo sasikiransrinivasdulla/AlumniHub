@@ -51,6 +51,7 @@ export default function ProfileSetup() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
 
   useEffect(() => {
     async function checkSetup() {
@@ -73,6 +74,7 @@ export default function ProfileSetup() {
         setPhoneNumber(profile.phoneNumber || "");
         setLinkedinUrl(profile.linkedinUrl || "");
         setGithubUrl(profile.githubUrl || "");
+        setInstagramUrl(profile.instagramUrl || "");
       } catch (err: any) {
         console.error(err);
         router.push("/");
@@ -123,12 +125,24 @@ export default function ProfileSetup() {
       setError("Phone number must be exactly 10 digits.");
       return;
     }
-    if (linkedinUrl && !/^(https?:\/\/)?([a-zA-Z0-9-]+\.)?linkedin\.com\/.*$/.test(linkedinUrl)) {
+
+    // Branch-based GitHub validation
+    const isSoftwareBranch = ["CSE", "CST", "AIML", "CAI"].includes(department);
+    if (isSoftwareBranch && !githubUrl.trim()) {
+      setError(`GitHub profile URL is required for software-related branch (${department}).`);
+      return;
+    }
+
+    if (githubUrl && !/^(https?:\/\/)?(www\.)?github\.com\/[a-zA-Z0-9_-]+\/?$/.test(githubUrl.trim())) {
+      setError("Please enter a valid GitHub profile URL (e.g., https://github.com/username).");
+      return;
+    }
+    if (linkedinUrl && !/^(https?:\/\/)?([a-zA-Z0-9-]+\.)?linkedin\.com\/.*$/.test(linkedinUrl.trim())) {
       setError("Please enter a valid LinkedIn URL.");
       return;
     }
-    if (githubUrl && !/^(https?:\/\/)?(www\\.)?github\\.com\/.*$/.test(githubUrl)) {
-      setError("Please enter a valid GitHub URL.");
+    if (instagramUrl && !/^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/.test(instagramUrl.trim())) {
+      setError("Please enter a valid Instagram URL (e.g., https://instagram.com/username).");
       return;
     }
 
@@ -144,6 +158,7 @@ export default function ProfileSetup() {
         phoneNumber: phoneNumber.trim(),
         linkedinUrl: linkedinUrl.trim() || null,
         githubUrl: githubUrl.trim() || null,
+        instagramUrl: instagramUrl.trim() || null,
       });
       // Successful save sets profileCompleted = true in DB. Redirect to Dashboard.
       router.push("/dashboard");
@@ -164,6 +179,7 @@ export default function ProfileSetup() {
   }
 
   const availableSections = SECTION_MAPPING[department] || [];
+  const isSoftwareBranch = ["CSE", "CST", "AIML", "CAI"].includes(department);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 py-12 relative overflow-hidden select-none">
@@ -277,7 +293,7 @@ export default function ProfileSetup() {
 
           {/* Current Position */}
           <div className="space-y-1">
-            <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Current Position</label>
+            <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Current Position (Optional)</label>
             <input
               type="text"
               value={currentPosition}
@@ -290,7 +306,7 @@ export default function ProfileSetup() {
           {/* Bio */}
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400">Bio</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-400">Bio (Optional)</label>
               <span className="text-[9px] text-neutral-500 tracking-wider">
                 {bio.length} / 250
               </span>
@@ -318,12 +334,12 @@ export default function ProfileSetup() {
             />
           </div>
 
-          {/* LinkedIn & GitHub Links */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* LinkedIn, GitHub, Instagram Links */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">LinkedIn URL</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">LinkedIn URL (Optional)</label>
               <input
-                type="url"
+                type="text"
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
                 className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
@@ -331,13 +347,25 @@ export default function ProfileSetup() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">GitHub URL</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">
+                GitHub URL {isSoftwareBranch ? "*" : "(Optional)"}
+              </label>
               <input
-                type="url"
+                type="text"
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
                 className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
                 placeholder="https://github.com/username"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Instagram URL (Optional)</label>
+              <input
+                type="text"
+                value={instagramUrl}
+                onChange={(e) => setInstagramUrl(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+                placeholder="https://instagram.com/username"
               />
             </div>
           </div>

@@ -11,19 +11,25 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 
 ## 🚀 Features
 
-### Current (v1.1.0 - Authentication & Profile Onboarding)
+### Current (v1.2.0 - Onboarding & Memories Feed)
+* **Alumni Memories Feed**: Exposes REST APIs (`POST /api/posts`, `GET /api/posts/feed`, and `GET /api/posts/{id}`) to share and browse memories.
+* **Community-Based Visibility Restrictions**:
+  - `CST` and `ECT`: Feed is visible strictly to users matching Batch + Department.
+  - `CSE`, `ECE`, `EEE`, `MECH`, `CIVIL`, `AIML`, `CAI`: Feed is visible strictly to users matching Batch + Department + Section.
+  - Direct detail requests (`GET /api/posts/{id}`) return `403 Forbidden` if user is outside the author's community.
 * **Secure Google Sign-In**: Powered by Firebase client authentication popup.
 * **Backend Verification**: ID Tokens are verified server-side using the Firebase Admin SDK to ensure security.
 * **Automatic User Provisioning**: Searches PostgreSQL for existing accounts; automatically provisions new user profiles.
 * **Modern JWT Authentication**: Custom signed application JSON Web Tokens (JJWT 0.12.6) for subsequent requests.
-* **User Profile Management**: REST API endpoints (`GET /api/user/me` and `PUT /api/user/me`) with custom Spring validations (exact 10-digit phone, max 250-character bio, LinkedIn, and GitHub URLs validation).
+* **User Profile Management**: REST API endpoints (`GET /api/user/me` and `PUT /api/user/me`) with custom Spring validations (exact 10-digit phone, max 250-character bio, LinkedIn, GitHub, and Instagram URLs validation).
+* **Branch-Based Conditional Validation**: GitHub profile URL is conditionally required for software-related branches (`CSE`, `CST`, `AIML`, `CAI`) and optional for all other branches.
 * **Mandatory First-Time Setup**: Automatic routing redirect logic locking dashboard access until users submit graduation details.
 * **Dynamic Dropdown Selectors**: Department-based Section options (e.g. CSE -> A/B/C/D, CST -> No Section).
-* **Responsive B&W Profile Dashboard**: Minimalist UI for viewing and updating user details.
+* **Responsive B&W Memories Dashboard**: Split-column layout displaying user info card next to recent community memories feed, with a "Share a Memory" submission modal.
 
 ### Planned Community Features
 * **Classmate Directories**: View contact information restricted only to classmates within the same Batch + Department + Section.
-* **Rich Media Feed**: Share posts, like, and write comments.
+* **Likes & Comments**: Interactive features for posts in the feed.
 * **Cloudinary Image Uploads**: High-performance image hosting for posts and profile pictures.
 
 ---

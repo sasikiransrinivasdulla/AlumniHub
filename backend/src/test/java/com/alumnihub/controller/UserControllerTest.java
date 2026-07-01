@@ -95,7 +95,8 @@ public class UserControllerTest {
                 .currentPosition("Lead Engineer")
                 .phoneNumber("9876543210")
                 .linkedinUrl("https://linkedin.com/in/test-user")
-                .githubUrl("https://github.com/test-user")
+                .githubUrl("https://github.com/test-user/")
+                .instagramUrl("https://instagram.com/test.user/")
                 .build();
 
         mockMvc.perform(put("/api/user/me")
@@ -111,7 +112,8 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.currentPosition", is("Lead Engineer")))
                 .andExpect(jsonPath("$.phoneNumber", is("9876543210")))
                 .andExpect(jsonPath("$.linkedinUrl", is("https://linkedin.com/in/test-user")))
-                .andExpect(jsonPath("$.githubUrl", is("https://github.com/test-user")))
+                .andExpect(jsonPath("$.githubUrl", is("https://github.com/test-user/")))
+                .andExpect(jsonPath("$.instagramUrl", is("https://instagram.com/test.user/")))
                 .andExpect(jsonPath("$.profileCompleted", is(true)));
 
         // Verify changes are in database
@@ -121,6 +123,7 @@ public class UserControllerTest {
         assertEquals("Updated Full Name", dbUser.getFullName());
         assertEquals("2020-2024", dbUser.getBatch());
         assertEquals("9876543210", dbUser.getPhoneNumber());
+        assertEquals("https://instagram.com/test.user/", dbUser.getInstagramUrl());
         assertTrue(Boolean.TRUE.equals(dbUser.getProfileCompleted()));
     }
 
@@ -174,6 +177,54 @@ public class UserControllerTest {
         UserProfileUpdateDto updateDto = UserProfileUpdateDto.builder()
                 .phoneNumber("1234567890")
                 .githubUrl("not-a-valid-github-link")
+                .build();
+
+        mockMvc.perform(put("/api/user/me")
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateProfile_ValidationFailure_GitHubRequiredForCSE() throws Exception {
+        UserProfileUpdateDto updateDto = UserProfileUpdateDto.builder()
+                .fullName("Test User")
+                .batch("2020-2024")
+                .department("CSE")
+                .phoneNumber("1234567890")
+                .githubUrl("") // empty for CSE (software branch)
+                .build();
+
+        mockMvc.perform(put("/api/user/me")
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateProfile_ValidationSuccess_GitHubOptionalForMECH() throws Exception {
+        UserProfileUpdateDto updateDto = UserProfileUpdateDto.builder()
+                .fullName("Test User")
+                .batch("2020-2024")
+                .department("MECH")
+                .phoneNumber("1234567890")
+                .githubUrl("") // empty for MECH (non-software branch)
+                .build();
+
+        mockMvc.perform(put("/api/user/me")
+                .header("Authorization", "Bearer " + jwtToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateDto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testUpdateProfile_ValidationFailure_InstagramUrl() throws Exception {
+        UserProfileUpdateDto updateDto = UserProfileUpdateDto.builder()
+                .phoneNumber("1234567890")
+                .instagramUrl("not-a-valid-instagram-link")
                 .build();
 
         mockMvc.perform(put("/api/user/me")

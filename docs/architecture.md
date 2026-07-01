@@ -18,14 +18,15 @@ The client follows a clean layout exploiting Next.js App Router:
   - `firebase.ts` parses client parameters and exports Auth provider models.
 * **`services/`**: Communication and token storage clients.
   - `authService.ts` wraps HTTP requests to the backend (login, getProfile, updateProfile) and handles token caching.
+  - `postService.ts` provides wrappers for post creation and memories feed retrieval.
 
 ### 2. Backend Architecture (Spring Boot 3)
 The backend is structured into standard enterprise layers:
-* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`) and profile (`UserController`) REST endpoints.
-* **Service (`service/`)**: Houses transaction boundaries and business logic (`AuthService`, `UserService`).
-* **Repository (`repository/`)**: Spring Data JPA query interface (`UserRepository`).
-* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs (`User`).
-* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications (`UserDto`, `UserProfileUpdateDto`, `AuthRequest`, `AuthResponse`).
+* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`), profile (`UserController`), and feed (`PostController`) REST endpoints.
+* **Service (`service/`)**: Houses transaction boundaries, visibility authorization, and business logic (`AuthService`, `UserService`, `PostService`).
+* **Repository (`repository/`)**: Spring Data JPA query interfaces (`UserRepository`, `PostRepository`).
+* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs (`User`, `Post`).
+* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications (`UserDto`, `UserProfileUpdateDto`, `PostDto`, `PostCreateDto`, `AuthRequest`, `AuthResponse`).
 * **Security & Config (`security/`, `config/`)**: Manages CORS headers, Spring security permissions, JWT interceptor filters (`JwtFilter`), and Firebase Admin credentials.
 
 ---

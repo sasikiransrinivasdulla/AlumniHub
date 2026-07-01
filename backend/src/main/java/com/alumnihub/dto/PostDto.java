@@ -1,0 +1,26 @@
+package com.alumnihub.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class PostDto {
+    private UUID id;
+    private UUID userId;
+    private String userFullName;
+    private String userProfilePicture;
+    private String userCurrentPosition;
+    private String imageUrl;
+    private String caption;
+    private int likesCount;
+    private int commentsCount;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

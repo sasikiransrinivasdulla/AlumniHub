@@ -12,6 +12,7 @@ export interface UserProfile {
   phoneNumber: string | null;
   linkedinUrl: string | null;
   githubUrl: string | null;
+  instagramUrl: string | null;
   profileCompleted: boolean;
   role: string;
   createdAt: string;

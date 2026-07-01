@@ -97,6 +97,7 @@ Retrieves the authenticated user's profile information.
   "phoneNumber": "9876543210",
   "linkedinUrl": "https://linkedin.com/in/john-doe",
   "githubUrl": "https://github.com/john-doe",
+  "instagramUrl": "https://instagram.com/john-doe",
   "profileCompleted": true,
   "role": "USER",
   "createdAt": "2026-06-30T12:00:00.000",
@@ -126,7 +127,8 @@ Updates editable details of the currently authenticated user's profile.
   "currentPosition": "Frontend Developer",
   "phoneNumber": "9876543210",
   "linkedinUrl": "https://linkedin.com/in/john-doe",
-  "githubUrl": "https://github.com/john-doe"
+  "githubUrl": "https://github.com/john-doe",
+  "instagramUrl": "https://instagram.com/john-doe"
 }
 ```
 
@@ -138,14 +140,86 @@ Updates editable details of the currently authenticated user's profile.
 - `bio`: Max 250 characters.
 - `currentPosition`: Max 100 characters.
 - `phoneNumber`: Must be exactly 10 digits (`^[0-9]{10}$`).
-- `linkedinUrl`: Valid LinkedIn URL format.
-- `githubUrl`: Valid GitHub URL format.
+- `linkedinUrl`: Optional, valid LinkedIn URL format.
+- `githubUrl`: Conditionally required for software branches (`CSE`, `CST`, `AIML`, `CAI`); optional for others. Must be a valid GitHub URL format (allows trailing slash).
+- `instagramUrl`: Optional, valid Instagram URL format.
 - Email and Firebase UID cannot be updated.
 
 #### Success Response
 * **Status Code**: `200 OK`
 * **Content-Type**: `application/json`
 * **Body**: Returns the updated user profile object (same structure as `GET /api/user/me`).
+
+---
+
+## 📸 Memories Feed Endpoints
+
+### Create a Post
+Creates a new post memory.
+
+* **Endpoint**: `/api/posts`
+* **HTTP Method**: `POST`
+* **Content-Type**: `application/json`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Request Payload
+```json
+{
+  "imageUrl": "https://example.com/memories.jpg",
+  "caption": "Graduation Day!"
+}
+```
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**:
+```json
+{
+  "id": "b0f78a2d-ec34-4b5f-90c6-b3ca836f21df",
+  "userId": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+  "userFullName": "John Doe",
+  "userProfilePicture": "https://lh3.googleusercontent.com/...",
+  "userCurrentPosition": "Software Intern",
+  "imageUrl": "https://example.com/memories.jpg",
+  "caption": "Graduation Day!",
+  "likesCount": 0,
+  "commentsCount": 0,
+  "createdAt": "2026-07-01T15:20:00.000",
+  "updatedAt": "2026-07-01T15:20:00.000"
+}
+```
+
+---
+
+### Fetch Memories Feed
+Gets posts shared within the requesting user's academic community (Batch + Dept for CST/ECT, Batch + Dept + Section for others).
+
+* **Endpoint**: `/api/posts/feed`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**: Array of Post objects.
+
+---
+
+### Fetch Post by ID
+Retrieves details of a single post by its ID. Requires user to belong to the post creator's academic community.
+
+* **Endpoint**: `/api/posts/{id}`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Body**: Post object.
+
+#### Error Response
+* **Status Code**: `403 Forbidden`
+* **Body**: Returned when requesting user is outside the creator's community.
 
 ---
 

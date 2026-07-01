@@ -51,6 +51,8 @@ public class User {
 
     private String githubUrl;
 
+    private String instagramUrl;
+
     private Boolean profileCompleted = false;
 
 
