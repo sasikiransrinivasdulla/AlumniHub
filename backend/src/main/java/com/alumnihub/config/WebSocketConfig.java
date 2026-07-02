@@ -7,6 +7,8 @@ import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.*;
 
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
@@ -14,7 +16,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,https://alumni-hub-sigma.vercel.app}")
     private String allowedOrigins;
 
     @Override
@@ -27,8 +29,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         String[] origins = allowedOrigins != null && !allowedOrigins.trim().isEmpty()
-                ? allowedOrigins.split(",")
-                : new String[]{"http://localhost:3000"};
+                ? Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toArray(String[]::new)
+                : new String[]{"http://localhost:3000", "http://127.0.0.1:3000", "https://alumni-hub-sigma.vercel.app"};
 
         registry.addEndpoint("/ws-chat")
                 .setAllowedOrigins(origins);

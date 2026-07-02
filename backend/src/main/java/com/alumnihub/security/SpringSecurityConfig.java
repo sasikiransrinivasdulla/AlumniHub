@@ -24,7 +24,7 @@ public class SpringSecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,https://alumni-hub-sigma.vercel.app}")
     private String allowedOrigins;
 
     @Bean
@@ -49,16 +49,21 @@ public class SpringSecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // Parse comma-separated allowed origins
+        // Parse comma-separated allowed origins and trim whitespace
         if (allowedOrigins != null && !allowedOrigins.trim().isEmpty()) {
-            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+            configuration.setAllowedOrigins(
+                Arrays.stream(allowedOrigins.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList()
+            );
         } else {
-            configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+            configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://127.0.0.1:3000", "https://alumni-hub-sigma.vercel.app"));
         }
         
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
-        configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
         configuration.setAllowCredentials(true);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
