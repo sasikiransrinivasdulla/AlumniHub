@@ -13,6 +13,18 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { requestCache } from "@/services/cacheService";
 
+const processPostsResponse = (res: any): Post[] => {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.content)) return res.content;
+  return [];
+};
+
+const processCommentsResponse = (res: any): CommentDto[] => {
+  if (Array.isArray(res)) return res;
+  if (res && Array.isArray(res.content)) return res.content;
+  return [];
+};
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -55,14 +67,16 @@ export default function Dashboard() {
           setFeedLoading(false);
           // fetch fresh background
           getMemoriesFeed()
-            .then((memories) => {
+            .then((res) => {
+              const memories = processPostsResponse(res);
               setPosts(memories);
               requestCache.set("feed_posts", memories, 20000); // cache for 20s
             })
             .catch(console.error);
         } else {
           try {
-            const memories = await getMemoriesFeed();
+            const res = await getMemoriesFeed();
+            const memories = processPostsResponse(res);
             setPosts(memories);
             requestCache.set("feed_posts", memories, 20000);
           } catch (feedErr) {
@@ -147,6 +161,7 @@ export default function Dashboard() {
 
     // Optimistically update
     setPosts(prevPosts => {
+      if (!Array.isArray(prevPosts)) return [];
       const updated = prevPosts.map(p =>
         p.id === postId
           ? { ...p, likedByMe: optimisticLiked, likesCount: optimisticCount }
@@ -159,6 +174,7 @@ export default function Dashboard() {
     try {
       const result = await toggleLike(postId);
       setPosts(prevPosts => {
+        if (!Array.isArray(prevPosts)) return [];
         const updated = prevPosts.map(p =>
           p.id === postId
             ? { ...p, likedByMe: result.liked, likesCount: result.likesCount }
@@ -171,6 +187,7 @@ export default function Dashboard() {
       console.error("Failed to toggle like:", err);
       // Rollback
       setPosts(prevPosts => {
+        if (!Array.isArray(prevPosts)) return [];
         const updated = prevPosts.map(p =>
           p.id === postId
             ? { ...p, likedByMe: originalLiked, likesCount: originalCount }
@@ -192,12 +209,13 @@ export default function Dashboard() {
     const cacheKey = `comments_${post.id}`;
     const cachedComments = requestCache.get(cacheKey);
     if (cachedComments) {
-      setComments(cachedComments);
+      setComments(processCommentsResponse(cachedComments));
       setCommentsLoading(false);
       
       // refresh in background
       getComments(post.id)
-        .then((list) => {
+        .then((res) => {
+          const list = processCommentsResponse(res);
           setComments(list);
           requestCache.set(cacheKey, list, 10000);
         })
@@ -206,7 +224,8 @@ export default function Dashboard() {
     }
 
     try {
-      const list = await getComments(post.id);
+      const res = await getComments(post.id);
+      const list = processCommentsResponse(res);
       setComments(list);
       requestCache.set(cacheKey, list, 10000);
     } catch (err: any) {
@@ -244,12 +263,14 @@ export default function Dashboard() {
 
     // Optimistically update states
     setComments(prev => {
-      const updated = [optimisticComment, ...prev];
+      const currentComments = Array.isArray(prev) ? prev : [];
+      const updated = [optimisticComment, ...currentComments];
       requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
       return updated;
     });
 
     setPosts(prevPosts => {
+      if (!Array.isArray(prevPosts)) return [];
       const updated = prevPosts.map(p =>
         p.id === activePostForComments.id
           ? { ...p, commentsCount: p.commentsCount + 1 }
@@ -265,6 +286,7 @@ export default function Dashboard() {
     try {
       const created = await addComment(activePostForComments.id, commentVal);
       setComments(prev => {
+        if (!Array.isArray(prev)) return [];
         const updated = prev.map(c => c.id === optimisticId ? created : c);
         requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
         return updated;
@@ -273,11 +295,13 @@ export default function Dashboard() {
       setCommentSubmitError(err.message || "Failed to submit comment.");
       // Rollback
       setComments(prev => {
+        if (!Array.isArray(prev)) return [];
         const updated = prev.filter(c => c.id !== optimisticId);
         requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
         return updated;
       });
       setPosts(prevPosts => {
+        if (!Array.isArray(prevPosts)) return [];
         const updated = prevPosts.map(p =>
           p.id === activePostForComments.id
             ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
@@ -297,12 +321,14 @@ export default function Dashboard() {
 
     // Optimistically delete
     setComments(prev => {
+      if (!Array.isArray(prev)) return [];
       const updated = prev.filter(c => c.id !== commentId);
       requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
       return updated;
     });
 
     setPosts(prevPosts => {
+      if (!Array.isArray(prevPosts)) return [];
       const updated = prevPosts.map(p =>
         p.id === activePostForComments.id
           ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
@@ -320,11 +346,13 @@ export default function Dashboard() {
       console.error("Failed to delete comment:", err);
       // Rollback
       setComments(prev => {
-        const updated = [...prev, targetComment].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const currentComments = Array.isArray(prev) ? prev : [];
+        const updated = [...currentComments, targetComment].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
         return updated;
       });
       setPosts(prevPosts => {
+        if (!Array.isArray(prevPosts)) return [];
         const updated = prevPosts.map(p =>
           p.id === activePostForComments.id
             ? { ...p, commentsCount: p.commentsCount + 1 }
@@ -402,7 +430,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="flex flex-col space-y-10">
-              {posts.map((post) => (
+              {Array.isArray(posts) && posts.map((post) => (
                 <motion.article 
                   key={post.id}
                   initial={{ opacity: 0, y: 15 }}
@@ -695,7 +723,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-5">
-                    {comments.map((comment) => (
+                    {Array.isArray(comments) && comments.map((comment) => (
                       <div key={comment.id} className="flex items-start justify-between border-b border-white/5 pb-4 gap-4">
                         <div className="flex items-start space-x-4">
                           <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">

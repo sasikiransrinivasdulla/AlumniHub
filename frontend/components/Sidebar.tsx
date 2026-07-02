@@ -39,7 +39,7 @@ export default function Sidebar({ user }: SidebarProps) {
       setNotificationsLoading(true);
       getNotifications()
         .then((res) => {
-          setNotifications(res.content);
+          setNotifications(res && Array.isArray(res.content) ? res.content : []);
           markAllNotificationsAsRead()
             .then(() => setUnreadNotificationsCount(0))
             .catch(console.error);
@@ -54,7 +54,10 @@ export default function Sidebar({ user }: SidebarProps) {
       const customEvent = e as CustomEvent<NotificationDto>;
       const newNotif = customEvent.detail;
       if (activeDrawer === "notifications") {
-        setNotifications((prev) => [newNotif, ...prev]);
+        setNotifications((prev) => {
+          const currentNotifications = Array.isArray(prev) ? prev : [];
+          return [newNotif, ...currentNotifications];
+        });
         markNotificationAsRead(newNotif.id).catch(console.error);
       }
     };
@@ -87,7 +90,7 @@ export default function Sidebar({ user }: SidebarProps) {
       try {
         const { searchAlumniDirectory } = await import("@/services/alumniService");
         const list = await searchAlumniDirectory(val.trim());
-        setSearchResults(list);
+        setSearchResults(Array.isArray(list) ? list : []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -311,7 +314,7 @@ export default function Sidebar({ user }: SidebarProps) {
                         No notifications
                       </div>
                     ) : (
-                      notifications.map((notif) => (
+                      Array.isArray(notifications) && notifications.map((notif) => (
                         <div
                           key={notif.id}
                           className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors"
@@ -374,7 +377,7 @@ export default function Sidebar({ user }: SidebarProps) {
                         {searchVal ? "No results found" : "Type to search"}
                       </div>
                     ) : (
-                      searchResults.map((res) => (
+                      Array.isArray(searchResults) && searchResults.map((res) => (
                         <div
                           key={res.id}
                           onClick={() => {
