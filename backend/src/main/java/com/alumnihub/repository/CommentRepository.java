@@ -9,5 +9,9 @@ import java.util.UUID;
 
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
-    List<Comment> findAllByPostOrderByCreatedAtDesc(Post post);
+    @Query(value = "select c from Comment c join fetch c.user u where c.post = :post order by c.createdAt desc",
+           countQuery = "select count(c) from Comment c where c.post = :post")
+    org.springframework.data.domain.Page<Comment> findAllByPostOrderByCreatedAtDesc(
+            @Param("post") Post post, 
+            org.springframework.data.domain.Pageable pageable);
 }

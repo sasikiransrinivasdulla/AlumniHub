@@ -8,11 +8,15 @@ import com.alumnihub.repository.PostRepository;
 import com.alumnihub.repository.UserRepository;
 import com.alumnihub.repository.LikeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -42,7 +46,7 @@ public class PostService {
         return convertToDto(savedPost, user);
     }
 
-    public List<PostDto> getFeedForUser(String email) {
+    public Page<PostDto> getFeedForUser(String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
@@ -50,14 +54,18 @@ public class PostService {
         String batch = user.getBatch();
         String sec = user.getSection();
 
-        List<Post> posts;
+        Page<Post> postsPage;
         if ("CST".equalsIgnoreCase(dept) || "ECT".equalsIgnoreCase(dept)) {
-            posts = postRepository.findAllByUserBatchAndUserDepartmentOrderByCreatedAtDesc(batch, dept);
+            postsPage = postRepository.findAllByUserBatchAndUserDepartmentOrderByCreatedAtDesc(batch, dept, pageable);
         } else {
-            posts = postRepository.findAllByUserBatchAndUserDepartmentAndUserSectionOrderByCreatedAtDesc(batch, dept, sec);
+            postsPage = postRepository.findAllByUserBatchAndUserDepartmentAndUserSectionOrderByCreatedAtDesc(batch, dept, sec, pageable);
         }
 
-        return posts.stream().map(p -> convertToDto(p, user)).collect(Collectors.toList());
+        List<UUID> postIds = postsPage.getContent().stream().map(Post::getId).collect(Collectors.toList());
+        Set<UUID> likedPostIds = postIds.isEmpty() ? Collections.emptySet() 
+                : likeRepository.findLikedPostIdsByUserAndPostIds(user, postIds);
+
+        return postsPage.map(p -> convertToDtoWithLikes(p, likedPostIds.contains(p.getId())));
     }
 
     public PostDto getPostById(String email, UUID postId) {
@@ -89,9 +97,12 @@ public class PostService {
     }
 
     private PostDto convertToDto(Post post, User requestingUser) {
-        User creator = post.getUser();
         boolean likedByMe = requestingUser != null && likeRepository.existsByUserAndPost(requestingUser, post);
+        return convertToDtoWithLikes(post, likedByMe);
+    }
 
+    private PostDto convertToDtoWithLikes(Post post, boolean likedByMe) {
+        User creator = post.getUser();
         return PostDto.builder()
                 .id(post.getId())
                 .userId(creator.getId())

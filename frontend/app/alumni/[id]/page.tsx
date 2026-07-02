@@ -21,6 +21,22 @@ export default function AlumniProfile({ params }: PageProps) {
   const [alumni, setAlumni] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [messaging, setMessaging] = useState(false);
+
+  const handleMessageClick = async () => {
+    if (!alumni) return;
+    setMessaging(true);
+    try {
+      const { getOrCreateConversation } = await import("@/services/chatService");
+      const conversation = await getOrCreateConversation(alumni.id);
+      router.push(`/messages?conversationId=${conversation.id}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to start conversation.");
+    } finally {
+      setMessaging(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -67,7 +83,7 @@ export default function AlumniProfile({ params }: PageProps) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white px-6 select-none">
         <div className="max-w-xl w-full glass-panel p-8 md:p-10 text-center space-y-6 shadow-2xl rounded-[24px]">
-          <h1 className="text-[24px] font-bold tracking-widest uppercase text-red-500 font-bold leading-tight">Access Denied</h1>
+          <h1 className="text-[24px] font-bold tracking-widest uppercase text-red-500 leading-tight">Access Denied</h1>
           <p className="text-[17px] text-neutral-400 font-light leading-relaxed">{error}</p>
           <div className="pt-4">
             <Link
@@ -136,6 +152,15 @@ export default function AlumniProfile({ params }: PageProps) {
                 <p className="text-[17px] text-neutral-400 mt-2 uppercase tracking-wider font-light">
                   {alumni.currentPosition || "Alumni Member"}
                 </p>
+                {currentUser?.id !== alumni.id && (
+                  <button
+                    onClick={handleMessageClick}
+                    disabled={messaging}
+                    className="mt-5 py-2.5 px-6 glass-button-primary text-[15px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 rounded-xl cursor-pointer disabled:opacity-50"
+                  >
+                    {messaging ? "Connecting..." : "Message"}
+                  </button>
+                )}
               </div>
             </div>
 

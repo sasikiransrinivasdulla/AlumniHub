@@ -38,8 +38,11 @@ public class LikeCommentController {
     }
 
     @GetMapping("/posts/{postId}/comments")
-    public ResponseEntity<List<CommentDto>> getComments(Principal principal, @PathVariable UUID postId) {
-        List<CommentDto> comments = likeCommentService.getComments(principal.getName(), postId);
+    public ResponseEntity<org.springframework.data.domain.Page<CommentDto>> getComments(
+            Principal principal,
+            @PathVariable UUID postId,
+            @org.springframework.data.web.PageableDefault(size = 10) org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<CommentDto> comments = likeCommentService.getComments(principal.getName(), postId, pageable);
         return ResponseEntity.ok(comments);
     }
 

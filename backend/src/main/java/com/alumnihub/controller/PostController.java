@@ -25,8 +25,10 @@ public class PostController {
     }
 
     @GetMapping("/feed")
-    public ResponseEntity<List<PostDto>> getFeed(Principal principal) {
-        List<PostDto> feed = postService.getFeedForUser(principal.getName());
+    public ResponseEntity<org.springframework.data.domain.Page<PostDto>> getFeed(
+            Principal principal,
+            @org.springframework.data.web.PageableDefault(size = 10) org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<PostDto> feed = postService.getFeedForUser(principal.getName(), pageable);
         return ResponseEntity.ok(feed);
     }
 

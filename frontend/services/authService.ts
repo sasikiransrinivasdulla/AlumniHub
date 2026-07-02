@@ -1,3 +1,5 @@
+import { requestCache } from "./cacheService";
+
 export interface UserProfile {
   id: string;
   firebaseUid: string;
@@ -31,6 +33,18 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080")
   .replace(/^["']|["']$/g, "")
   .trim();
 
+export function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length < 2) return true;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    return (payload.exp * 1000) < (Date.now() + 10000); // 10s buffer
+  } catch {
+    return true;
+  }
+}
+
 export async function loginWithFirebaseToken(firebaseToken: string): Promise<AuthResponse> {
   const response = await fetch(`${API_URL}/api/auth/google`, {
     method: "POST",
@@ -57,7 +71,12 @@ export const setAuthToken = (token: string) => {
 
 export const getAuthToken = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("alumni_hub_token");
+    const token = localStorage.getItem("alumni_hub_token");
+    if (token && isTokenExpired(token)) {
+      clearAuth();
+      return null;
+    }
+    return token;
   }
   return null;
 };
@@ -70,6 +89,11 @@ export const setAuthUser = (user: UserProfile) => {
 
 export const getAuthUser = (): UserProfile | null => {
   if (typeof window !== "undefined") {
+    const token = localStorage.getItem("alumni_hub_token");
+    if (!token || isTokenExpired(token)) {
+      clearAuth();
+      return null;
+    }
     const userStr = localStorage.getItem("alumni_hub_user");
     return userStr ? JSON.parse(userStr) : null;
   }
@@ -80,13 +104,19 @@ export const clearAuth = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem("alumni_hub_token");
     localStorage.removeItem("alumni_hub_user");
+    requestCache.clear();
   }
 };
 
-export async function getUserProfile(): Promise<UserProfile> {
+export async function getUserProfile(forceFetch = false): Promise<UserProfile> {
   const token = getAuthToken();
   if (!token) {
     throw new Error("No authentication token found.");
+  }
+
+  if (!forceFetch) {
+    const cachedProfile = requestCache.get("user_profile");
+    if (cachedProfile) return cachedProfile;
   }
 
   const response = await fetch(`${API_URL}/api/user/me`, {
@@ -106,6 +136,7 @@ export async function getUserProfile(): Promise<UserProfile> {
 
   const user = await response.json();
   setAuthUser(user);
+  requestCache.set("user_profile", user, 30000); // Cache for 30s
   return user;
 }
 
@@ -131,6 +162,6 @@ export async function updateUserProfile(data: Partial<UserProfile>): Promise<Use
 
   const updatedUser = await response.json();
   setAuthUser(updatedUser);
+  requestCache.delete("user_profile"); // invalidate cache
   return updatedUser;
 }
-

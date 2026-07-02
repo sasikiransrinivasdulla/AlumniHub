@@ -2,12 +2,14 @@ package com.alumnihub;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
 @SpringBootApplication
+@EnableAsync
 public class AlumniHubApplication {
 
     static {

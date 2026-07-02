@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SocketProvider } from "@/context/SocketContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,21 +14,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alumni Hub | Reconnect. Remember. Relive.",
-  description: "A private social network exclusively for alumni. Reconnect, remember, and relive old memories with your batch, department, and section.",
+  title: "Alumni Hub",
+  description: "Reconnect, remember, and relive memories with your college community.",
   icons: {
     icon: "/AHlogo.png",
     shortcut: "/AHlogo.png",
     apple: "/AHlogo.png",
   },
   openGraph: {
-    title: "Alumni Hub | Reconnect. Remember. Relive.",
-    description: "A private social network exclusively for alumni. Reconnect, remember, and relive old memories with your batch, department, and section.",
+    title: "Alumni Hub",
+    description: "Reconnect, remember, and relive memories with your college community.",
     images: [
       {
         url: "/AHlogo.png",
-        width: 500,
-        height: 500,
+        width: 800,
+        height: 800,
         alt: "Alumni Hub Logo",
       },
     ],
@@ -60,7 +61,7 @@ export default function RootLayout({
         
         {/* Page Content */}
         <div className="relative z-10 flex-1 flex flex-col">
-          {children}
+          <SocketProvider>{children}</SocketProvider>
         </div>
       </body>
     </html>

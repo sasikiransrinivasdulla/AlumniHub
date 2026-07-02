@@ -5,6 +5,7 @@ import com.alumnihub.dto.CommentDto;
 import com.alumnihub.dto.LikeStatusDto;
 import com.alumnihub.entity.Comment;
 import com.alumnihub.entity.Like;
+import com.alumnihub.entity.NotificationType;
 import com.alumnihub.entity.Post;
 import com.alumnihub.entity.User;
 import com.alumnihub.repository.CommentRepository;
@@ -12,14 +13,14 @@ import com.alumnihub.repository.LikeRepository;
 import com.alumnihub.repository.PostRepository;
 import com.alumnihub.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,7 @@ public class LikeCommentService {
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public LikeStatusDto toggleLike(String email, UUID postId) {
@@ -58,6 +60,17 @@ public class LikeCommentService {
             liked = true;
         }
         postRepository.saveAndFlush(post);
+
+        if (liked) {
+            notificationService.createNotification(
+                    post.getUser(),
+                    user,
+                    NotificationType.LIKE,
+                    post.getId(),
+                    user.getFullName() + " liked your memory post."
+            );
+        }
+
         return new LikeStatusDto(liked, post.getLikesCount());
     }
 
@@ -82,10 +95,11 @@ public class LikeCommentService {
 
         validateVisibility(user, post);
 
+        String commentVal = commentDto.getComment().trim();
         Comment comment = Comment.builder()
                 .post(post)
                 .user(user)
-                .comment(commentDto.getComment().trim())
+                .comment(commentVal)
                 .build();
 
         Comment savedComment = commentRepository.save(comment);
@@ -93,10 +107,19 @@ public class LikeCommentService {
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
 
+        String commentPreview = commentVal.length() > 40 ? commentVal.substring(0, 37) + "..." : commentVal;
+        notificationService.createNotification(
+                post.getUser(),
+                user,
+                NotificationType.COMMENT,
+                post.getId(),
+                user.getFullName() + " commented: \"" + commentPreview + "\""
+        );
+
         return convertToCommentDto(savedComment);
     }
 
-    public List<CommentDto> getComments(String email, UUID postId) {
+    public Page<CommentDto> getComments(String email, UUID postId, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
@@ -105,8 +128,8 @@ public class LikeCommentService {
 
         validateVisibility(user, post);
 
-        List<Comment> comments = commentRepository.findAllByPostOrderByCreatedAtDesc(post);
-        return comments.stream().map(this::convertToCommentDto).collect(Collectors.toList());
+        Page<Comment> commentsPage = commentRepository.findAllByPostOrderByCreatedAtDesc(post, pageable);
+        return commentsPage.map(this::convertToCommentDto);
     }
 
     @Transactional

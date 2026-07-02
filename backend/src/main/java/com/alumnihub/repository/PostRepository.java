@@ -19,8 +19,19 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     Optional<Post> findByIdForUpdate(@Param("id") UUID id);
     
     // For CST and ECT: filter by batch and department
-    List<Post> findAllByUserBatchAndUserDepartmentOrderByCreatedAtDesc(String batch, String department);
+    @Query(value = "select p from Post p join fetch p.user u where u.batch = :batch and u.department = :department order by p.createdAt desc",
+           countQuery = "select count(p) from Post p join p.user u where u.batch = :batch and u.department = :department")
+    org.springframework.data.domain.Page<Post> findAllByUserBatchAndUserDepartmentOrderByCreatedAtDesc(
+            @Param("batch") String batch, 
+            @Param("department") String department, 
+            org.springframework.data.domain.Pageable pageable);
 
     // For CSE, ECE, EEE, MECH, CIVIL, AIML, CAI: filter by batch, department, and section
-    List<Post> findAllByUserBatchAndUserDepartmentAndUserSectionOrderByCreatedAtDesc(String batch, String department, String section);
+    @Query(value = "select p from Post p join fetch p.user u where u.batch = :batch and u.department = :department and u.section = :section order by p.createdAt desc",
+           countQuery = "select count(p) from Post p join p.user u where u.batch = :batch and u.department = :department and u.section = :section")
+    org.springframework.data.domain.Page<Post> findAllByUserBatchAndUserDepartmentAndUserSectionOrderByCreatedAtDesc(
+            @Param("batch") String batch, 
+            @Param("department") String department, 
+            @Param("section") String section, 
+            org.springframework.data.domain.Pageable pageable);
 }

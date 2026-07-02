@@ -8,6 +8,9 @@ import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
 import { motion } from "framer-motion";
 
+import { useRef } from "react";
+import { requestCache } from "@/services/cacheService";
+
 export default function Directory() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -15,6 +18,7 @@ export default function Directory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [directoryLoading, setDirectoryLoading] = useState(true);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -26,14 +30,30 @@ export default function Directory() {
         }
         setCurrentUser(profile);
         
-        // Fetch visible alumni directory list
-        try {
-          const list = await getAlumniDirectory();
-          setAlumniList(list);
-        } catch (dirErr) {
-          console.error("Failed to load directory:", dirErr);
-        } finally {
+        // Fetch visible alumni directory list from cache first
+        const cacheKey = "dir_search_";
+        const cached = requestCache.get(cacheKey);
+        if (cached) {
+          setAlumniList(cached);
           setDirectoryLoading(false);
+          
+          // silent refresh
+          getAlumniDirectory()
+            .then((list) => {
+              setAlumniList(list);
+              requestCache.set(cacheKey, list, 30000);
+            })
+            .catch(console.error);
+        } else {
+          try {
+            const list = await getAlumniDirectory();
+            setAlumniList(list);
+            requestCache.set(cacheKey, list, 30000);
+          } catch (dirErr) {
+            console.error("Failed to load directory:", dirErr);
+          } finally {
+            setDirectoryLoading(false);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -44,25 +64,48 @@ export default function Directory() {
       }
     }
     loadData();
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
   }, [router]);
 
-  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchQuery(val);
-    setDirectoryLoading(true);
-    try {
-      if (val.trim() === "") {
-        const list = await getAlumniDirectory();
-        setAlumniList(list);
-      } else {
-        const list = await searchAlumniDirectory(val);
-        setAlumniList(list);
-      }
-    } catch (err) {
-      console.error("Failed to search:", err);
-    } finally {
-      setDirectoryLoading(false);
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
+
+    debounceRef.current = setTimeout(async () => {
+      setDirectoryLoading(true);
+      try {
+        const trimmed = val.trim();
+        const cacheKey = `dir_search_${trimmed}`;
+        const cached = requestCache.get(cacheKey);
+        if (cached) {
+          setAlumniList(cached);
+          setDirectoryLoading(false);
+          return;
+        }
+
+        let list: UserProfile[] = [];
+        if (trimmed === "") {
+          list = await getAlumniDirectory();
+        } else {
+          list = await searchAlumniDirectory(trimmed);
+        }
+        setAlumniList(list);
+        requestCache.set(cacheKey, list, 30000);
+      } catch (err) {
+        console.error("Failed to search:", err);
+      } finally {
+        setDirectoryLoading(false);
+      }
+    }, 250);
   };
 
   if (loading) {

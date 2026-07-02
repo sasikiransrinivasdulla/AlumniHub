@@ -11,6 +11,8 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { requestCache } from "@/services/cacheService";
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -46,14 +48,28 @@ export default function Dashboard() {
         }
         setUser(profile);
         
-        // Fetch memories feed
-        try {
-          const memories = await getMemoriesFeed();
-          setPosts(memories);
-        } catch (feedErr) {
-          console.error("Failed to load feed:", feedErr);
-        } finally {
+        // Fetch memories feed from cache first
+        const cachedFeed = requestCache.get("feed_posts");
+        if (cachedFeed) {
+          setPosts(cachedFeed);
           setFeedLoading(false);
+          // fetch fresh background
+          getMemoriesFeed()
+            .then((memories) => {
+              setPosts(memories);
+              requestCache.set("feed_posts", memories, 20000); // cache for 20s
+            })
+            .catch(console.error);
+        } else {
+          try {
+            const memories = await getMemoriesFeed();
+            setPosts(memories);
+            requestCache.set("feed_posts", memories, 20000);
+          } catch (feedErr) {
+            console.error("Failed to load feed:", feedErr);
+          } finally {
+            setFeedLoading(false);
+          }
         }
       } catch (err: any) {
         console.error(err);
@@ -102,8 +118,10 @@ export default function Dashboard() {
         imageUrl: uploadedUrl,
         caption: caption.trim(),
       });
-      // Prepend to current feed list
-      setPosts([newPost, ...posts]);
+      
+      const updated = [newPost, ...posts];
+      setPosts(updated);
+      requestCache.set("feed_posts", updated, 20000);
       
       // Reset and close modal
       setSelectedImageFile(null);
@@ -119,17 +137,48 @@ export default function Dashboard() {
   };
 
   const handleLikeToggle = async (postId: string) => {
+    const targetPost = posts.find(p => p.id === postId);
+    if (!targetPost) return;
+
+    const originalLiked = targetPost.likedByMe;
+    const originalCount = targetPost.likesCount;
+    const optimisticLiked = !originalLiked;
+    const optimisticCount = originalLiked ? Math.max(0, originalCount - 1) : originalCount + 1;
+
+    // Optimistically update
+    setPosts(prevPosts => {
+      const updated = prevPosts.map(p =>
+        p.id === postId
+          ? { ...p, likedByMe: optimisticLiked, likesCount: optimisticCount }
+          : p
+      );
+      requestCache.set("feed_posts", updated, 20000);
+      return updated;
+    });
+
     try {
       const result = await toggleLike(postId);
-      setPosts(prevPosts =>
-        prevPosts.map(p =>
+      setPosts(prevPosts => {
+        const updated = prevPosts.map(p =>
           p.id === postId
             ? { ...p, likedByMe: result.liked, likesCount: result.likesCount }
             : p
-        )
-      );
+        );
+        requestCache.set("feed_posts", updated, 20000);
+        return updated;
+      });
     } catch (err: any) {
       console.error("Failed to toggle like:", err);
+      // Rollback
+      setPosts(prevPosts => {
+        const updated = prevPosts.map(p =>
+          p.id === postId
+            ? { ...p, likedByMe: originalLiked, likesCount: originalCount }
+            : p
+        );
+        requestCache.set("feed_posts", updated, 20000);
+        return updated;
+      });
     }
   };
 
@@ -138,9 +187,28 @@ export default function Dashboard() {
     setCommentsLoading(true);
     setCommentSubmitError(null);
     setNewCommentText("");
+    
+    // Check comments cache
+    const cacheKey = `comments_${post.id}`;
+    const cachedComments = requestCache.get(cacheKey);
+    if (cachedComments) {
+      setComments(cachedComments);
+      setCommentsLoading(false);
+      
+      // refresh in background
+      getComments(post.id)
+        .then((list) => {
+          setComments(list);
+          requestCache.set(cacheKey, list, 10000);
+        })
+        .catch(console.error);
+      return;
+    }
+
     try {
       const list = await getComments(post.id);
       setComments(list);
+      requestCache.set(cacheKey, list, 10000);
     } catch (err: any) {
       console.error("Failed to fetch comments:", err);
     } finally {
@@ -163,53 +231,109 @@ export default function Dashboard() {
       return;
     }
 
-    setSubmittingComment(true);
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticComment: CommentDto = {
+      id: optimisticId,
+      userId: user!.id,
+      userFullName: user!.fullName,
+      userProfilePicture: user!.profilePicture,
+      userCurrentPosition: user!.currentPosition,
+      comment: commentVal,
+      createdAt: new Date().toISOString()
+    };
+
+    // Optimistically update states
+    setComments(prev => {
+      const updated = [optimisticComment, ...prev];
+      requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
+      return updated;
+    });
+
+    setPosts(prevPosts => {
+      const updated = prevPosts.map(p =>
+        p.id === activePostForComments.id
+          ? { ...p, commentsCount: p.commentsCount + 1 }
+          : p
+      );
+      requestCache.set("feed_posts", updated, 20000);
+      return updated;
+    });
+
+    setActivePostForComments(prev => prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : null);
+    setNewCommentText("");
+
     try {
       const created = await addComment(activePostForComments.id, commentVal);
-      setComments([created, ...comments]);
-      setNewCommentText("");
-
-      // Increment comments count on feed page dynamically
-      setPosts(prevPosts =>
-        prevPosts.map(p =>
-          p.id === activePostForComments.id
-            ? { ...p, commentsCount: p.commentsCount + 1 }
-            : p
-        )
-      );
-      // Update local post count reference
-      setActivePostForComments({
-        ...activePostForComments,
-        commentsCount: activePostForComments.commentsCount + 1
+      setComments(prev => {
+        const updated = prev.map(c => c.id === optimisticId ? created : c);
+        requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
+        return updated;
       });
     } catch (err: any) {
       setCommentSubmitError(err.message || "Failed to submit comment.");
-    } finally {
-      setSubmittingComment(false);
+      // Rollback
+      setComments(prev => {
+        const updated = prev.filter(c => c.id !== optimisticId);
+        requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
+        return updated;
+      });
+      setPosts(prevPosts => {
+        const updated = prevPosts.map(p =>
+          p.id === activePostForComments.id
+            ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
+            : p
+        );
+        requestCache.set("feed_posts", updated, 20000);
+        return updated;
+      });
+      setActivePostForComments(prev => prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : null);
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (!activePostForComments) return;
+    const targetComment = comments.find(c => c.id === commentId);
+    if (!targetComment) return;
+
+    // Optimistically delete
+    setComments(prev => {
+      const updated = prev.filter(c => c.id !== commentId);
+      requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
+      return updated;
+    });
+
+    setPosts(prevPosts => {
+      const updated = prevPosts.map(p =>
+        p.id === activePostForComments.id
+          ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
+          : p
+      );
+      requestCache.set("feed_posts", updated, 20000);
+      return updated;
+    });
+
+    setActivePostForComments(prev => prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : null);
+
     try {
       await deleteComment(commentId);
-      setComments(comments.filter(c => c.id !== commentId));
-
-      // Decrement comments count on feed page dynamically
-      setPosts(prevPosts =>
-        prevPosts.map(p =>
-          p.id === activePostForComments.id
-            ? { ...p, commentsCount: Math.max(0, p.commentsCount - 1) }
-            : p
-        )
-      );
-      // Update local post count reference
-      setActivePostForComments({
-        ...activePostForComments,
-        commentsCount: Math.max(0, activePostForComments.commentsCount - 1)
-      });
     } catch (err: any) {
       console.error("Failed to delete comment:", err);
+      // Rollback
+      setComments(prev => {
+        const updated = [...prev, targetComment].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
+        return updated;
+      });
+      setPosts(prevPosts => {
+        const updated = prevPosts.map(p =>
+          p.id === activePostForComments.id
+            ? { ...p, commentsCount: p.commentsCount + 1 }
+            : p
+        );
+        requestCache.set("feed_posts", updated, 20000);
+        return updated;
+      });
+      setActivePostForComments(prev => prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : null);
     }
   };
 
