@@ -90,13 +90,13 @@ public class PostService {
 
     private PostDto convertToDto(Post post, User requestingUser) {
         User creator = post.getUser();
-        boolean likedByMe = requestingUser != null && likeRepository.existsByPostAndUser(post, requestingUser);
+        boolean likedByMe = requestingUser != null && likeRepository.existsByUserAndPost(requestingUser, post);
 
         return PostDto.builder()
                 .id(post.getId())
                 .userId(creator.getId())
                 .userFullName(creator.getFullName())
-                .userProfilePicture(creator.getProfilePicture())
+                .userProfilePicture(creator.getProfilePictureUrl())
                 .userCurrentPosition(creator.getCurrentPosition())
                 .imageUrl(post.getImageUrl())
                 .caption(post.getCaption())

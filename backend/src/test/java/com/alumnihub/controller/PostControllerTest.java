@@ -42,6 +42,12 @@ public class PostControllerTest {
     private PostRepository postRepository;
 
     @Autowired
+    private com.alumnihub.repository.CommentRepository commentRepository;
+
+    @Autowired
+    private com.alumnihub.repository.LikeRepository likeRepository;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
@@ -57,6 +63,8 @@ public class PostControllerTest {
 
     @BeforeEach
     void setUp() {
+        commentRepository.deleteAll();
+        likeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -120,6 +128,8 @@ public class PostControllerTest {
 
     @AfterEach
     void tearDown() {
+        commentRepository.deleteAll();
+        likeRepository.deleteAll();
         postRepository.deleteAll();
         userRepository.deleteAll();
     }

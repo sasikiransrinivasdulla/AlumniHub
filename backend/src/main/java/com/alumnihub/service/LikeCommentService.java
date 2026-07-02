@@ -36,15 +36,16 @@ public class LikeCommentService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
-        Post post = postRepository.findById(postId)
+        Post post = postRepository.findByIdForUpdate(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
 
         validateVisibility(user, post);
 
-        Optional<Like> existingLike = likeRepository.findByPostAndUser(post, user);
+        Optional<Like> existingLike = likeRepository.findByUserAndPost(user, post);
         boolean liked;
         if (existingLike.isPresent()) {
-            likeRepository.delete(existingLike.get());
+            Like managedLike = existingLike.get();
+            likeRepository.delete(managedLike);
             post.setLikesCount(Math.max(0, post.getLikesCount() - 1));
             liked = false;
         } else {
@@ -56,7 +57,7 @@ public class LikeCommentService {
             post.setLikesCount(post.getLikesCount() + 1);
             liked = true;
         }
-        postRepository.save(post);
+        postRepository.saveAndFlush(post);
         return new LikeStatusDto(liked, post.getLikesCount());
     }
 
@@ -152,7 +153,7 @@ public class LikeCommentService {
                 .id(comment.getId())
                 .userId(creator.getId())
                 .userFullName(creator.getFullName())
-                .userProfilePicture(creator.getProfilePicture())
+                .userProfilePicture(creator.getProfilePictureUrl())
                 .userCurrentPosition(creator.getCurrentPosition())
                 .comment(comment.getComment())
                 .createdAt(comment.getCreatedAt())

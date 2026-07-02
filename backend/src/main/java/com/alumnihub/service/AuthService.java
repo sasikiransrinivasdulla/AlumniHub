@@ -59,8 +59,8 @@ public class AuthService {
                 user.setFullName(name);
                 updated = true;
             }
-            if (picture != null && !picture.equals(user.getProfilePicture())) {
-                user.setProfilePicture(picture);
+            if (picture != null && (user.getProfilePictureUrl() == null || user.getProfilePictureUrl().contains("googleusercontent.com")) && !picture.equals(user.getProfilePictureUrl())) {
+                user.setProfilePictureUrl(picture);
                 updated = true;
             }
             if (updated) {
@@ -72,7 +72,7 @@ public class AuthService {
                     .firebaseUid(uid)
                     .email(email)
                     .fullName(name != null ? name : "Alumni Member")
-                    .profilePicture(picture)
+                    .profilePictureUrl(picture)
                     .role("USER")
                     .build();
             user = userRepository.save(user);

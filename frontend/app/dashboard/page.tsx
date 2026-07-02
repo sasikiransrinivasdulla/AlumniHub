@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMemoriesFeed, createPost, Post } from "@/services/postService";
 import { toggleLike, getComments, addComment, deleteComment, CommentDto } from "@/services/likeCommentService";
+import { uploadPostImage } from "@/services/uploadService";
 import Image from "next/image";
 import Link from "next/link";
+import Sidebar from "@/components/Sidebar";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -17,7 +20,10 @@ export default function Dashboard() {
 
   // Share Memory Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imageUrl, setImageUrl] = useState("");
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -60,11 +66,6 @@ export default function Dashboard() {
     loadData();
   }, [router]);
 
-  const handleLogout = () => {
-    clearAuth();
-    router.push("/");
-  };
-
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
@@ -75,16 +76,38 @@ export default function Dashboard() {
     }
 
     setSubmitting(true);
+    let uploadedUrl: string | null = null;
+
     try {
+      if (selectedImageFile) {
+        setUploading(true);
+        setUploadProgress(0);
+        try {
+          uploadedUrl = await uploadPostImage(selectedImageFile, (percent) => {
+            setUploadProgress(percent);
+          });
+        } catch (uploadErr: any) {
+          console.error(uploadErr);
+          setModalError(uploadErr.message || "Failed to upload memory image.");
+          setSubmitting(false);
+          setUploading(false);
+          setUploadProgress(null);
+          return;
+        }
+        setUploading(false);
+        setUploadProgress(null);
+      }
+
       const newPost = await createPost({
-        imageUrl: imageUrl.trim() || null,
+        imageUrl: uploadedUrl,
         caption: caption.trim(),
       });
       // Prepend to current feed list
       setPosts([newPost, ...posts]);
       
       // Reset and close modal
-      setImageUrl("");
+      setSelectedImageFile(null);
+      setImagePreviewUrl(null);
       setCaption("");
       setIsModalOpen(false);
     } catch (err: any) {
@@ -207,7 +230,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-xs tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile & Feed...</p>
+        <p className="text-[17px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile & Feed...</p>
       </main>
     );
   }
@@ -217,165 +240,56 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="flex min-h-screen bg-black text-white relative overflow-hidden select-none">
-      {/* Radial glow background effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
+    <div className="min-h-screen bg-black text-white flex overflow-hidden">
+      {/* Fixed Left Sidebar */}
+      <Sidebar user={user} />
 
-      <div className="z-10 flex flex-col lg:flex-row w-full max-w-6xl mx-auto px-6 py-12 gap-8">
-        
-        {/* Left Column: Welcome / Profile Info Card */}
-        <aside className="w-full lg:w-1/3 flex flex-col bg-neutral-950 p-6 border border-neutral-900 shadow-2xl h-fit space-y-6">
+      {/* Main Feed Container (Vertical scroll, no horizontal scroll) */}
+      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+        <div className="z-10 w-full max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-10">
           
-          {/* Header block */}
-          <div className="flex items-center space-x-4 pb-4 border-b border-neutral-900">
-            <div className="relative w-16 h-16 rounded-full overflow-hidden border border-neutral-800 bg-neutral-900 flex items-center justify-center flex-shrink-0">
-              {user.profilePicture ? (
-                <Image
-                  src={user.profilePicture}
-                  alt={user.fullName}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <span className="text-xl font-light text-neutral-600">
-                  {user.fullName.charAt(0).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-white tracking-wide truncate uppercase">{user.fullName}</h2>
-              <span className="text-[10px] tracking-wider text-neutral-500 block truncate">{user.email}</span>
-            </div>
-          </div>
-
-          {/* Academic Info */}
-          <div className="space-y-3">
-            <h3 className="text-[10px] tracking-widest uppercase text-neutral-500 font-bold">Academic Community</h3>
-            <div className="space-y-2 text-xs text-neutral-300 font-light">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Batch:</span>
-                <span>{user.batch ? `Class of ${user.batch}` : "N/A"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Department:</span>
-                <span>{user.department || "N/A"}</span>
-              </div>
-              {user.section && (
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Section:</span>
-                  <span>{user.section}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Professional / Contact Info */}
-          <div className="space-y-3 pt-2">
-            <h3 className="text-[10px] tracking-widest uppercase text-neutral-500 font-bold">Details</h3>
-            <div className="space-y-2 text-xs font-light text-neutral-300">
-              <div>
-                <span className="text-neutral-500 block text-[10px] uppercase mb-0.5">Position</span>
-                <span className="text-neutral-200">{user.currentPosition || "Not Specified"}</span>
-              </div>
-              {user.bio && (
-                <div>
-                  <span className="text-neutral-500 block text-[10px] uppercase mb-0.5">Bio</span>
-                  <p className="text-neutral-400 line-clamp-3 leading-relaxed">{user.bio}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Social Links */}
-          <div className="flex space-x-3 pt-2 border-t border-neutral-900">
-            {user.linkedinUrl && (
-              <a
-                href={user.linkedinUrl.startsWith("http") ? user.linkedinUrl : `https://${user.linkedinUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white underline"
-              >
-                LinkedIn
-              </a>
-            )}
-            {user.githubUrl && (
-              <a
-                href={user.githubUrl.startsWith("http") ? user.githubUrl : `https://${user.githubUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white underline"
-              >
-                GitHub
-              </a>
-            )}
-            {user.instagramUrl && (
-              <a
-                href={user.instagramUrl.startsWith("http") ? user.instagramUrl : `https://${user.instagramUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] tracking-widest uppercase text-neutral-400 hover:text-white underline"
-              >
-                Instagram
-              </a>
-            )}
-          </div>
-
-          {/* User Controls */}
-          <div className="flex flex-col gap-2 pt-4 border-t border-neutral-900">
-            <Link
-              href="/dashboard/edit"
-              className="py-2.5 text-center bg-white text-black text-xs font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out"
-            >
-              Edit Profile
-            </Link>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="py-2.5 bg-transparent text-white text-xs font-semibold tracking-widest uppercase border border-neutral-800 hover:border-white transition-all duration-300 ease-out cursor-pointer"
-            >
-              Logout
-            </button>
-          </div>
-        </aside>
-
-        {/* Right Column: Memories Feed */}
-        <section className="flex-1 flex flex-col space-y-6">
-          
-          {/* Header block with Share button */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-neutral-950 p-6 border border-neutral-900 gap-4">
+          {/* Feed Header with Share Button */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-8 gap-6">
             <div>
-              <h1 className="text-xl font-light tracking-widest uppercase">Recent Memories</h1>
-              <p className="text-[10px] tracking-wider text-neutral-500 mt-1">
-                Showing posts from classmates in {user.department} {user.section ? `Sec ${user.section}` : ""} ({user.batch})
+              <h1 className="text-[32px] font-light tracking-widest uppercase leading-tight">Memories Feed</h1>
+              <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+                {user.department} {user.section ? `Sec ${user.section}` : ""} • Class of {user.batch}
               </p>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => setIsModalOpen(true)}
-              className="py-2.5 px-6 bg-white text-black text-xs font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out flex-shrink-0"
+              className="py-3.5 px-8 glass-button-primary text-[17px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-200 flex-shrink-0 cursor-pointer rounded-2xl"
             >
               Share a Memory
-            </button>
+            </motion.button>
           </div>
 
           {/* Feed List */}
           {feedLoading ? (
-            <div className="flex items-center justify-center p-12 bg-neutral-950 border border-neutral-900">
-              <span className="text-xs text-neutral-500 tracking-widest uppercase animate-pulse">Loading Feed...</span>
+            <div className="flex items-center justify-center p-16 glass-panel rounded-[24px]">
+              <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Feed...</span>
             </div>
           ) : posts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-12 bg-neutral-950 border border-neutral-900 text-center space-y-3">
-              <span className="text-sm font-light text-neutral-400">No memories shared in your community yet.</span>
-              <p className="text-xs text-neutral-600">Be the first to share a graduation or college photo!</p>
+            <div className="flex flex-col items-center justify-center p-16 glass-panel text-center space-y-4 rounded-[24px]">
+              <span className="text-[17px] font-light text-neutral-300">No memories shared in your community yet.</span>
+              <p className="text-[15px] text-neutral-500">Be the first to share a graduation or college photo!</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="flex flex-col space-y-10">
               {posts.map((post) => (
-                <article key={post.id} className="bg-neutral-950 border border-neutral-900 overflow-hidden flex flex-col">
+                <motion.article 
+                  key={post.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="glass-panel rounded-[24px] overflow-hidden flex flex-col max-w-2xl w-full mx-auto"
+                >
                   
                   {/* Post Creator Info */}
-                  <div className="flex items-center space-x-3 p-4 border-b border-neutral-900/60">
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-neutral-800 bg-neutral-900 flex items-center justify-center">
+                  <div className="flex items-center space-x-4 p-5 border-b border-white/5">
+                    <div className="relative w-11 h-11 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center">
                       {post.userProfilePicture ? (
                         <Image
                           src={post.userProfilePicture}
@@ -385,266 +299,357 @@ export default function Dashboard() {
                           unoptimized
                         />
                       ) : (
-                        <span className="text-sm font-light text-neutral-500">
+                        <span className="text-[17px] font-light text-neutral-400">
                           {post.userFullName.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
                       <div className="flex items-baseline space-x-2">
-                        <span className="text-xs font-semibold text-white tracking-wide">{post.userFullName}</span>
+                        <Link href={`/alumni/${post.userId}`} className="text-[17px] font-semibold text-white tracking-wide hover:underline leading-none">
+                          {post.userFullName}
+                        </Link>
                         {post.userCurrentPosition && (
-                          <span className="text-[9px] text-neutral-500 hidden sm:inline">• {post.userCurrentPosition}</span>
+                          <span className="text-[15px] text-neutral-400 hidden sm:inline">• {post.userCurrentPosition}</span>
                         )}
                       </div>
-                      <span className="text-[9px] text-neutral-500 block mt-0.5">{formatTime(post.createdAt)}</span>
+                      <span className="text-[15px] text-neutral-500 block mt-1 leading-none">{formatTime(post.createdAt)}</span>
                     </div>
                   </div>
 
                   {/* Post Image */}
                   {post.imageUrl && (
-                    <div className="relative w-full h-[320px] bg-neutral-900 border-b border-neutral-900">
+                    <div className="relative w-full aspect-square md:aspect-[4/3] bg-neutral-900/10 border-b border-white/5">
                       <Image
                         src={post.imageUrl}
                         alt="Memory Photo"
                         fill
-                        className="object-contain"
+                        className="object-cover"
                         unoptimized
                       />
                     </div>
                   )}
 
-                  {/* Post Caption */}
-                  <div className="p-4 space-y-4">
-                    <p className="text-sm font-light text-neutral-200 leading-relaxed whitespace-pre-wrap">
-                      {post.caption}
-                    </p>
-
-                    {/* Likes & Comments Counters & Action buttons */}
-                    <div className="flex items-center justify-between text-[10px] tracking-wider text-neutral-500 pt-2 border-t border-neutral-900/50">
-                      <div className="flex space-x-6">
-                        <span>{post.likesCount} Likes</span>
-                        <button 
-                          onClick={() => handleOpenCommentsModal(post)}
-                          className="hover:text-white"
+                  {/* Post Details & Interaction */}
+                  <div className="p-6 space-y-5">
+                    {/* Action buttons (Like & Comment) */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-5">
+                        {/* Like Button */}
+                        <motion.button
+                          whileTap={{ scale: 1.2 }}
+                          onClick={() => handleLikeToggle(post.id)}
+                          className="text-[28px] hover:opacity-85 transition-opacity focus:outline-none cursor-pointer"
                         >
-                          {post.commentsCount} Comments
+                          {post.likedByMe ? "❤️" : "🤍"}
+                        </motion.button>
+
+                        {/* Comment Button */}
+                        <button
+                          onClick={() => handleOpenCommentsModal(post)}
+                          className="text-[28px] hover:opacity-85 transition-opacity focus:outline-none cursor-pointer"
+                        >
+                          💬
                         </button>
                       </div>
-                      <div className="flex space-x-4">
-                        <button
-                          onClick={() => handleLikeToggle(post.id)}
-                          className="flex items-center space-x-1 px-3 py-1 bg-neutral-900 border border-neutral-800 text-xs text-white hover:border-neutral-500 transition-colors duration-200"
-                        >
-                          <span>{post.likedByMe ? "❤️" : "🤍"}</span>
-                          <span>Like</span>
-                        </button>
-                        <button
-                          onClick={() => handleOpenCommentsModal(post)}
-                          className="flex items-center space-x-1 px-3 py-1 bg-neutral-900 border border-neutral-800 text-xs text-white hover:border-neutral-500 transition-colors duration-200"
-                        >
-                          <span>💬</span>
-                          <span>Comment</span>
-                        </button>
+
+                      <div className="text-[15px] text-neutral-400 font-light">
+                        {post.likesCount} likes
                       </div>
                     </div>
+
+                    {/* Caption & Metadata */}
+                    <div className="space-y-2">
+                      <p className="text-[17px] font-light text-neutral-200 leading-relaxed whitespace-pre-wrap">
+                        <span className="font-semibold text-white mr-2">{post.userFullName}</span>
+                        {post.caption}
+                      </p>
+                    </div>
+
+                    {/* Comments trigger */}
+                    {post.commentsCount > 0 && (
+                      <button
+                        onClick={() => handleOpenCommentsModal(post)}
+                        className="text-[15px] text-neutral-400 hover:text-neutral-300 font-light block focus:outline-none cursor-pointer"
+                      >
+                        View all {post.commentsCount} comments
+                      </button>
+                    )}
                   </div>
 
-                </article>
+                </motion.article>
               ))}
             </div>
           )}
 
-        </section>
-
-      </div>
+        </div>
+      </main>
 
       {/* Share a Memory Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-neutral-950 border border-neutral-800 p-6 md:p-8 space-y-6 shadow-2xl relative">
-            
-            {/* Modal Title */}
-            <div>
-              <h2 className="text-md font-light tracking-widest uppercase">Share a Memory</h2>
-              <p className="text-[10px] tracking-wider text-neutral-500 mt-1">Post a text update or link a graduation photo URL.</p>
-            </div>
-
-            {modalError && (
-              <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-xs tracking-wider">
-                {modalError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreatePost} className="space-y-4">
-              
-              {/* Image URL Input */}
-              <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Image URL (Optional)</label>
-                <input
-                  type="text"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-xs p-3"
-                  placeholder="https://example.com/photo.jpg"
-                />
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-8 shadow-2xl relative rounded-[24px]"
+            >
+              <div>
+                <h2 className="text-[24px] font-light tracking-widest uppercase text-white leading-tight">Share a Memory</h2>
+                <p className="text-[15px] tracking-wider text-neutral-400 mt-2">Upload a memory image and write a caption.</p>
               </div>
 
-              {/* Caption Textarea */}
-              <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Caption *</label>
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  rows={4}
-                  required
-                  className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-xs p-3 resize-none"
-                  placeholder="What's on your mind? Share college stories, graduation moments..."
-                />
-              </div>
+              {modalError && (
+                <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-[15px] tracking-wider rounded-xl">
+                  {modalError}
+                </div>
+              )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-4 pt-2">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 py-2.5 bg-white text-black text-xs font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? "Sharing..." : "Post Memory"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setImageUrl("");
-                    setCaption("");
-                    setModalError(null);
-                  }}
-                  disabled={submitting}
-                  className="flex-1 py-2.5 bg-transparent text-white text-xs font-semibold tracking-widest uppercase border border-neutral-800 hover:border-white transition-all duration-300 ease-out cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
+              <form onSubmit={handleCreatePost} className="space-y-6">
+                
+                {/* Image Selection */}
+                <div className="space-y-3">
+                  <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Choose Image (Optional)</label>
+                  <div className="flex items-center gap-4">
+                    <label className="px-5 py-3 glass-button text-[15px] font-semibold tracking-widest uppercase transition-all duration-300 cursor-pointer rounded-xl">
+                      Select Image
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+                          const file = files[0];
 
-            </form>
+                          // Size Check
+                          if (file.size > 10 * 1024 * 1024) {
+                            setModalError("File size exceeds the maximum limit of 10 MB.");
+                            return;
+                          }
+                          const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+                          if (!allowedTypes.includes(file.type)) {
+                            setModalError("Unsupported file format. Only JPG, JPEG, PNG, and WEBP are allowed.");
+                            return;
+                          }
 
+                          setModalError(null);
+                          setSelectedImageFile(file);
+                          setImagePreviewUrl(URL.createObjectURL(file));
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {selectedImageFile && (
+                      <span className="text-[15px] text-neutral-400 truncate max-w-[220px]">
+                        {selectedImageFile.name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Selected Image Preview */}
+                  {imagePreviewUrl && (
+                    <div className="relative mt-3 border border-white/5 bg-neutral-900/30 flex items-center justify-center p-3 max-h-[180px] overflow-hidden rounded-xl">
+                      <img
+                        src={imagePreviewUrl}
+                        alt="Preview"
+                        className="max-h-[156px] w-auto object-contain rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedImageFile(null);
+                          setImagePreviewUrl(null);
+                        }}
+                        className="absolute top-3 right-3 bg-black/80 hover:bg-black text-[13px] uppercase tracking-wider px-3 py-1.5 border border-white/10 hover:border-white/30 transition-colors rounded-lg"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Upload Progress Indicator */}
+                  {uploadProgress !== null && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-[13px] uppercase tracking-widest text-neutral-400">
+                        <span>Uploading Image</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 overflow-hidden rounded-full">
+                        <div
+                          className="bg-white h-full transition-all duration-150"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Caption Textarea */}
+                <div className="space-y-2">
+                  <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Caption *</label>
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={4}
+                    required
+                    className="w-full glass-input focus:outline-none text-[16px] p-4 resize-none rounded-xl"
+                    placeholder="What's on your mind? Share college stories, graduation moments..."
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-4 border-t border-white/5">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 py-3.5 glass-button-primary text-[17px] font-semibold tracking-widest uppercase transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-2xl"
+                  >
+                    {submitting ? "Sharing..." : "Post Memory"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      setSelectedImageFile(null);
+                      setImagePreviewUrl(null);
+                      setCaption("");
+                      setModalError(null);
+                    }}
+                    disabled={submitting}
+                    className="flex-1 py-3.5 glass-button text-[17px] font-semibold tracking-widest uppercase transition-all duration-300 ease-out cursor-pointer rounded-2xl"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Comments List Modal */}
-      {activePostForComments && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-neutral-950 border border-neutral-800 p-6 md:p-8 space-y-6 shadow-2xl relative flex flex-col max-h-[90vh]">
-            
-            {/* Modal Title & Stats */}
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-md font-light tracking-widest uppercase">Comments</h2>
-                <p className="text-[10px] tracking-wider text-neutral-500 mt-1">
-                  Post by {activePostForComments.userFullName} • {activePostForComments.commentsCount} Comments
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActivePostForComments(null)}
-                className="text-neutral-500 hover:text-white text-xs uppercase tracking-widest border border-neutral-800 hover:border-white px-3 py-1"
-              >
-                Close
-              </button>
-            </div>
-
-            {/* Comment Form */}
-            <form onSubmit={handleAddComment} className="space-y-3">
-              {commentSubmitError && (
-                <div className="p-2 bg-red-950/20 border border-red-900/50 text-red-500 text-[10px] tracking-wider">
-                  {commentSubmitError}
+      <AnimatePresence>
+        {activePostForComments && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-6 shadow-2xl relative flex flex-col max-h-[90vh] rounded-[24px]"
+            >
+              
+              {/* Modal Title & Stats */}
+              <div className="flex justify-between items-start border-b border-white/5 pb-5">
+                <div>
+                  <h2 className="text-[24px] font-light tracking-widest uppercase leading-tight">Comments</h2>
+                  <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+                    By {activePostForComments.userFullName} • {activePostForComments.commentsCount} Comments
+                  </p>
                 </div>
-              )}
-              <div className="flex space-x-3">
-                <input
-                  type="text"
-                  maxLength={500}
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  placeholder="Add a comment... (max 500 chars)"
-                  className="flex-1 bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-xs p-3"
-                  required
-                />
                 <button
-                  type="submit"
-                  disabled={submittingComment}
-                  className="bg-white text-black text-xs font-semibold tracking-widest uppercase px-6 hover:bg-neutral-200 disabled:opacity-50"
+                  type="button"
+                  onClick={() => setActivePostForComments(null)}
+                  className="text-neutral-450 hover:text-white text-[13px] uppercase tracking-widest border border-white/10 hover:border-white px-4 py-2 cursor-pointer rounded-xl transition-colors"
                 >
-                  {submittingComment ? "Posting..." : "Post"}
+                  Close
                 </button>
               </div>
-            </form>
 
-            {/* Comment List */}
-            <div className="flex-1 overflow-y-auto min-h-[200px] border border-neutral-900 bg-neutral-950/40 p-4 space-y-4">
-              {commentsLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <span className="text-xs text-neutral-500 tracking-widest uppercase animate-pulse">Loading Comments...</span>
-                </div>
-              ) : comments.length === 0 ? (
-                <div className="flex justify-center items-center h-32 text-neutral-600 text-xs">
-                  <span>No comments yet.</span>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="flex items-start justify-between border-b border-neutral-900 pb-3 gap-3">
-                      <div className="flex items-start space-x-3">
-                        <div className="relative w-8 h-8 rounded-full overflow-hidden border border-neutral-800 bg-neutral-900 flex items-center justify-center flex-shrink-0">
-                          {comment.userProfilePicture ? (
-                            <Image
-                              src={comment.userProfilePicture}
-                              alt={comment.userFullName}
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                          ) : (
-                            <span className="text-xs text-neutral-500 font-light">
-                              {comment.userFullName.charAt(0).toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-baseline space-x-2">
-                            <span className="text-xs font-semibold text-white tracking-wide">{comment.userFullName}</span>
-                            {comment.userCurrentPosition && (
-                              <span className="text-[9px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
+              {/* Comment List */}
+              <div className="flex-1 overflow-y-auto min-h-[220px] space-y-5 pr-2">
+                {commentsLoading ? (
+                  <div className="flex justify-center items-center h-32">
+                    <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Comments...</span>
+                  </div>
+                ) : comments.length === 0 ? (
+                  <div className="flex justify-center items-center h-32 text-neutral-500 text-[15px]">
+                    <span>No comments yet.</span>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {comments.map((comment) => (
+                      <div key={comment.id} className="flex items-start justify-between border-b border-white/5 pb-4 gap-4">
+                        <div className="flex items-start space-x-4">
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                            {comment.userProfilePicture ? (
+                              <Image
+                                src={comment.userProfilePicture}
+                                alt={comment.userFullName}
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            ) : (
+                              <span className="text-[15px] text-neutral-400 font-light">
+                                {comment.userFullName.charAt(0).toUpperCase()}
+                              </span>
                             )}
                           </div>
-                          <span className="text-[9px] text-neutral-500 block">{formatTime(comment.createdAt)}</span>
-                          <p className="text-xs font-light text-neutral-200 mt-1.5 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
+                          <div>
+                            <div className="flex items-baseline space-x-2">
+                              <span className="text-[15px] font-semibold text-white tracking-wide">{comment.userFullName}</span>
+                              {comment.userCurrentPosition && (
+                                <span className="text-[13px] text-neutral-400 hidden sm:inline">• {comment.userCurrentPosition}</span>
+                              )}
+                            </div>
+                            <span className="text-[13px] text-neutral-500 block mt-1">{formatTime(comment.createdAt)}</span>
+                            <p className="text-[15px] font-light text-neutral-200 mt-2 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
+                          </div>
                         </div>
+
+                        {/* Delete comment option (owner only) */}
+                        {comment.userId === user.id && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="text-neutral-500 hover:text-red-400 text-[13px] tracking-wider uppercase border border-transparent hover:border-red-950 px-3 py-1.5 flex-shrink-0 cursor-pointer rounded-lg transition-all"
+                            title="Delete Comment"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                      {/* Delete comment option (owner only) */}
-                      {comment.userId === user.id && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteComment(comment.id)}
-                          className="text-neutral-500 hover:text-red-500 text-[10px] tracking-wider uppercase border border-transparent hover:border-red-900/50 px-2 py-1 flex-shrink-0"
-                          title="Delete Comment"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                  ))}
+              {/* Comment Form */}
+              <form onSubmit={handleAddComment} className="space-y-4 pt-5 border-t border-white/5">
+                {commentSubmitError && (
+                  <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[13px] tracking-wider rounded-lg">
+                    {commentSubmitError}
+                  </div>
+                )}
+                <div className="flex space-x-4">
+                  <input
+                    type="text"
+                    maxLength={500}
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder="Add a comment... (max 500 chars)"
+                    className="flex-1 glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    disabled={submittingComment}
+                    className="glass-button-primary text-[15px] font-semibold tracking-widest uppercase px-6 hover:bg-neutral-200 disabled:opacity-50 cursor-pointer rounded-xl"
+                  >
+                    {submittingComment ? "Posting..." : "Post"}
+                  </button>
                 </div>
-              )}
-            </div>
+              </form>
 
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
-    </main>
+    </div>
   );
 }

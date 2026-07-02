@@ -52,7 +52,7 @@ public class UserControllerTest {
                 .firebaseUid("firebase-test-profile-123")
                 .email("profile.test@gmail.com")
                 .fullName("Profile Test User")
-                .profilePicture("http://example.com/profile.jpg")
+                .profilePictureUrl("http://example.com/profile.jpg")
                 .role("USER")
                 .profileCompleted(false)
                 .build();
@@ -232,5 +232,26 @@ public class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void printTokenForManualTesting() {
+        userRepository.findByEmail("testuser@gmail.com").ifPresent(userRepository::delete);
+        User testUserComplete = userRepository.save(User.builder()
+                .firebaseUid("firebase-test-manual-123")
+                .email("testuser@gmail.com")
+                .fullName("Manual Test User")
+                .profilePictureUrl("http://example.com/profile.jpg")
+                .batch("2020-2024")
+                .department("CSE")
+                .section("A")
+                .phoneNumber("9876543210")
+                .bio("Manual testing alumni memory feed.")
+                .currentPosition("Software Engineer")
+                .role("USER")
+                .profileCompleted(true)
+                .build());
+        String token = jwtUtil.generateToken(testUserComplete);
+        System.out.println("MANUAL_TESTING_JWT_TOKEN:" + token);
     }
 }

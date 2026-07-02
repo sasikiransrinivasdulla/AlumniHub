@@ -317,6 +317,54 @@ Deletes an existing comment. Strictly authorized to the comment owner.
 
 ---
 
+## 👥 Alumni Directory Endpoints
+
+### Fetch Classmates
+Retrieves all classmate profiles within the academic community bounds.
+
+* **Endpoint**: `/api/alumni`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**: Array of User Profile objects.
+
+---
+
+### Search Classmates
+Performs an instant case-insensitive search by Full Name or Current Position of classmates within the academic community.
+
+* **Endpoint**: `/api/alumni/search?q={query}`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**: Array of User Profile objects.
+
+---
+
+### Fetch Classmate Profile Details
+Retrieves complete profile details (including phone number and bio) for a specific classmate.
+
+* **Endpoint**: `/api/alumni/{id}`
+* **HTTP Method**: `GET`
+* **Access Control**: Authenticated (Requires `Authorization: Bearer <JWT_token>` header)
+
+#### Success Response
+* **Status Code**: `200 OK`
+* **Content-Type**: `application/json`
+* **Body**: User Profile object.
+
+#### Error Response
+* **Status Code**: `403 Forbidden`
+* **Body**: Returned when target user is outside the requester's academic community.
+
+---
+
 ## ❌ Error Responses
 
 ### Bad Request / Input Validation Failures

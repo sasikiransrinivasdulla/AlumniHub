@@ -32,7 +32,8 @@ public class User {
     @Column(nullable = false)
     private String fullName;
 
-    private String profilePicture;
+    @Column(name = "profile_picture_url", columnDefinition = "TEXT")
+    private String profilePictureUrl;
 
     private String batch;
 

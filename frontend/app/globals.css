@@ -16,4 +16,56 @@ body {
   background: var(--background);
   color: var(--foreground);
   margin: 0;
+  overflow-x: hidden;
 }
+
+/* Liquid Glass Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(15, 15, 15, 0.35);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+.glass-input {
+  background: rgba(25, 25, 25, 0.4);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(35, 35, 35, 0.5);
+  outline: none;
+}
+
+.glass-button {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.glass-button-primary {
+  background: rgba(255, 255, 255, 0.88);
+  color: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-button-primary:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+

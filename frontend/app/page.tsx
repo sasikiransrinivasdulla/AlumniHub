@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { loginWithFirebaseToken, setAuthToken, setAuthUser } from "@/services/authService";
+import { motion } from "framer-motion";
 
 export default function Login() {
   const router = useRouter();
@@ -45,49 +47,61 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 relative overflow-hidden select-none">
+      
       {/* Radial glow background effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_100%)] pointer-events-none" />
 
-      {/* Main Content Container */}
-      <div className="z-10 flex flex-col items-center text-center space-y-8 max-w-lg">
-        {/* Subtle top border divider */}
-        <div className="w-12 h-[1px] bg-neutral-800" />
+      {/* Main Content glass container */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="z-10 flex flex-col items-center text-center p-10 md:p-14 glass-panel rounded-[24px] max-w-lg w-full space-y-8"
+      >
+        
+        {/* Branding Logo */}
+        <div className="relative w-20 h-20">
+          <Image
+            src="/AHlogo.png"
+            alt="Alumni Hub Logo"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
 
-        {/* Branding */}
-        <div className="space-y-4">
-          <h1 className="text-4xl md:text-5xl font-light tracking-[0.25em] uppercase text-white">
+        {/* Branding Title */}
+        <div className="space-y-3">
+          <h1 className="text-[32px] font-light tracking-[0.2em] uppercase text-white leading-tight">
             Alumni Hub
           </h1>
-          <p className="text-neutral-500 text-xs md:text-sm font-medium tracking-[0.3em] uppercase">
-            Reconnect. Remember. Relive.
+          <p className="text-neutral-450 text-[15px] tracking-[0.25em] uppercase font-light">
+            Reconnect • Remember • Relive
           </p>
         </div>
 
-        {/* Subtle middle divider */}
-        <div className="w-12 h-[1px] bg-neutral-800" />
-
-        {/* Actions */}
-        <div className="pt-4 flex flex-col items-center space-y-4">
+        {/* Action Button */}
+        <div className="pt-4 flex flex-col items-center space-y-4 w-full">
           <button
             type="button"
             disabled={loading}
             onClick={handleGoogleLogin}
-            className="px-8 py-3 bg-white text-black text-xs font-semibold tracking-[0.2em] uppercase rounded-none border border-white hover:bg-black hover:text-white transition-all duration-500 ease-out cursor-pointer disabled:bg-neutral-800 disabled:text-neutral-500 disabled:border-neutral-800 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-none"
+            className="w-full py-4 glass-button-primary text-[17px] font-semibold tracking-[0.15em] uppercase rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-50"
           >
             {loading ? "Authenticating..." : "Continue with Google"}
           </button>
           
           {error && (
-            <p className="text-xs text-red-500 tracking-[0.1em] font-light uppercase max-w-xs leading-5">
+            <p className="text-[15px] text-red-500 tracking-[0.05em] font-light uppercase max-w-xs leading-relaxed pt-2">
               {error}
             </p>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Footer Branding */}
       <div className="absolute bottom-8 left-0 right-0 text-center z-10">
-        <span className="text-[10px] text-neutral-600 tracking-[0.4em] uppercase font-light">
+        <span className="text-[15px] text-neutral-600 tracking-[0.3em] uppercase font-light">
           Alumni Hub &copy; {new Date().getFullYear()}
         </span>
       </div>

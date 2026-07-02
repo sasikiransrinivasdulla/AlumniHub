@@ -20,11 +20,12 @@ The client follows a clean layout exploiting Next.js App Router:
   - `authService.ts` wraps HTTP requests to the backend (login, getProfile, updateProfile) and handles token caching.
   - `postService.ts` provides wrappers for post creation and memories feed retrieval.
   - `likeCommentService.ts` coordinates toggling likes and posting/deleting comments.
+  - `alumniService.ts` provides classmates listing and search lookups.
 
 ### 2. Backend Architecture (Spring Boot 3)
 The backend is structured into standard enterprise layers:
-* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`), profile (`UserController`), feed (`PostController`), and likes/comments (`LikeCommentController`) REST endpoints.
-* **Service (`service/`)**: Houses transaction boundaries, visibility authorization, and business logic (`AuthService`, `UserService`, `PostService`, `LikeCommentService`).
+* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`), profile (`UserController`), feed (`PostController`), likes/comments (`LikeCommentController`), and directory (`AlumniController`) REST endpoints.
+* **Service (`service/`)**: Houses transaction boundaries, visibility authorization, and business logic (`AuthService`, `UserService`, `PostService`, `LikeCommentService`, `AlumniService`).
 * **Repository (`repository/`)**: Spring Data JPA query interfaces (`UserRepository`, `PostRepository`, `LikeRepository`, `CommentRepository`).
 * **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs (`User`, `Post`, `Like`, `Comment`).
 * **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications (`UserDto`, `UserProfileUpdateDto`, `PostDto`, `PostCreateDto`, `CommentDto`, `CommentCreateDto`, `LikeStatusDto`, `AuthRequest`, `AuthResponse`).

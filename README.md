@@ -11,7 +11,12 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 
 ## 🚀 Features
 
-### Current (v1.3.0 - Likes & Comments System)
+### Current (v1.4.0 - Alumni Directory & Search)
+* **Alumni Directory and Search**:
+  - Exposes `GET /api/alumni` returning classmate lists within the academic community bounds.
+  - Exposes `GET /api/alumni/search?q=` supporting instant, case-insensitive classmate search by full name or current position.
+  - Exposes `GET /api/alumni/{id}` returning complete profile details. Rejects with `403 Forbidden` if the requested profile resides outside the requester's academic community.
+  - Sidebar and top search navigation routing, dynamic grids, and secure profile view components.
 * **Likes and Comments System**:
   - **Likes**: Exposes `POST /api/posts/{postId}/like` (toggles user's like state on/off) and `GET /api/posts/{postId}/likes/count`.
   - **Comments**: Exposes `POST /api/posts/{postId}/comments` (adds comments up to 500 chars), `GET /api/posts/{postId}/comments`, and `DELETE /api/comments/{commentId}`.
@@ -19,9 +24,9 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
   - **Community Rule Enforcement**: Likes and comments are rejected with `403 Forbidden` if a user attempts to interact with a post outside their batch, department, or section community.
 * **Alumni Memories Feed**: Exposes REST APIs (`POST /api/posts`, `GET /api/posts/feed`, and `GET /api/posts/{id}`) to share and browse memories.
 * **Community-Based Visibility Restrictions**:
-  - `CST` and `ECT`: Feed is visible strictly to users matching Batch + Department.
-  - `CSE`, `ECE`, `EEE`, `MECH`, `CIVIL`, `AIML`, `CAI`: Feed is visible strictly to users matching Batch + Department + Section.
-  - Direct detail requests (`GET /api/posts/{id}`) return `403 Forbidden` if user is outside the author's community.
+  - `CST` and `ECT`: Feed and directory are visible strictly to users matching Batch + Department.
+  - `CSE`, `ECE`, `EEE`, `MECH`, `CIVIL`, `AIML`, `CAI`: Feed and directory are visible strictly to users matching Batch + Department + Section.
+  - Direct detail requests (`GET /api/posts/{id}` or `GET /api/alumni/{id}`) return `403 Forbidden` if user is outside the creator's/classmate's community.
 * **Secure Google Sign-In**: Powered by Firebase client authentication popup.
 * **Backend Verification**: ID Tokens are verified server-side using the Firebase Admin SDK to ensure security.
 * **Automatic User Provisioning**: Searches PostgreSQL for existing accounts; automatically provisions new user profiles.
@@ -33,7 +38,6 @@ Alumni Hub is an enterprise-grade social networking platform built exclusively f
 * **Responsive B&W Memories Dashboard**: Split-column layout displaying user info card next to recent community memories feed, with a "Share a Memory" submission modal. Includes a responsive comments section modal supporting real-time likes toggling, scrolling comments list sorted newest first, comment submission, and deletion of own comments.
 
 ### Planned Community Features
-* **Classmate Directories**: View contact information restricted only to classmates within the same Batch + Department + Section.
 * **Cloudinary Image Uploads**: High-performance image hosting for posts and profile pictures.
 
 ---

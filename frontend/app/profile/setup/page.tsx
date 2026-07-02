@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserProfile, updateUserProfile, UserProfile } from "@/services/authService";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 const BATCH_OPTIONS = Array.from({ length: 24 }, (_, i) => `${2000 + i}-${2004 + i}`);
 
@@ -173,7 +174,7 @@ export default function ProfileSetup() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-xs tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Initializing Profile Setup...</p>
+        <p className="text-[17px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Initializing Profile Setup...</p>
       </main>
     );
   }
@@ -183,28 +184,34 @@ export default function ProfileSetup() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 py-12 relative overflow-hidden select-none">
+      
       {/* Radial glow background effect */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_100%)] pointer-events-none" />
 
       {/* Form Container */}
-      <div className="z-10 flex flex-col w-full max-w-2xl bg-neutral-950 p-8 md:p-12 border border-neutral-900 shadow-2xl space-y-8">
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="z-10 flex flex-col w-full max-w-2xl glass-panel p-8 md:p-12 shadow-2xl space-y-8 rounded-[24px]"
+      >
         
         {/* Title */}
-        <div className="pb-4 border-b border-neutral-900 text-center sm:text-left">
-          <h1 className="text-2xl font-light tracking-widest uppercase text-white">Complete Your Profile</h1>
-          <p className="text-xs tracking-wider text-neutral-500 mt-1">Please provide the remaining graduation details to access the platform.</p>
+        <div className="pb-5 border-b border-white/5 text-center sm:text-left">
+          <h1 className="text-[32px] font-light tracking-widest uppercase text-white leading-tight">Complete Your Profile</h1>
+          <p className="text-[15px] tracking-wider text-neutral-400 mt-2">Please provide the remaining graduation details to access the platform.</p>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-xs tracking-wider">
+          <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-[15px] tracking-wider rounded-xl">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Avatar & Read-Only User Metadata */}
-          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-neutral-900">
-            <div className="relative w-20 h-20 rounded-full overflow-hidden border border-neutral-800 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+          <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-white/5">
+            <div className="relative w-22 h-22 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
               {profilePicture ? (
                 <Image
                   src={profilePicture}
@@ -214,15 +221,15 @@ export default function ProfileSetup() {
                   unoptimized
                 />
               ) : (
-                <span className="text-2xl font-light text-neutral-600">
+                <span className="text-3xl font-light text-neutral-450">
                   {fullName.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-sm font-semibold tracking-wide text-neutral-400 block">{fullName}</span>
-              <span className="text-xs tracking-wider text-neutral-600 block mt-0.5">{email}</span>
-              <span className="inline-block mt-2 text-[9px] tracking-widest uppercase text-neutral-500 bg-neutral-900 px-2 py-0.5 border border-neutral-800">
+            <div className="text-center sm:text-left space-y-1">
+              <span className="text-[17px] font-semibold tracking-wide text-white block leading-none">{fullName}</span>
+              <span className="text-[15px] tracking-wider text-neutral-400 block mt-1 leading-none">{email}</span>
+              <span className="inline-block mt-3 text-[13px] tracking-widest uppercase text-neutral-400 bg-white/5 px-3 py-1 border border-white/10 rounded-lg">
                 Google Authenticated
               </span>
             </div>
@@ -230,52 +237,52 @@ export default function ProfileSetup() {
 
           {/* Academic Dropdowns */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Batch *</label>
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Batch *</label>
               <select
                 value={batch}
                 onChange={(e) => setBatch(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-none cursor-pointer"
+                className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl cursor-pointer"
                 required
               >
-                <option value="">Select Batch</option>
+                <option value="" className="bg-neutral-950">Select Batch</option>
                 {BATCH_OPTIONS.map((range) => (
-                  <option key={range} value={range}>
+                  <option key={range} value={range} className="bg-neutral-950">
                     {range}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Department *</label>
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Department *</label>
               <select
                 value={department}
                 onChange={(e) => handleDepartmentChange(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-xs sm:text-sm p-3 transition-colors duration-300 rounded-none cursor-pointer"
+                className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl cursor-pointer"
                 required
               >
-                <option value="">Select Department</option>
+                <option value="" className="bg-neutral-950">Select Department</option>
                 {DEPARTMENT_OPTIONS.map((dept) => (
-                  <option key={dept} value={dept}>
+                  <option key={dept} value={dept} className="bg-neutral-950">
                     {dept}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Section</label>
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Section</label>
               {availableSections.length > 0 ? (
                 <select
                   value={section}
                   onChange={(e) => setSection(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-none cursor-pointer"
+                  className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl cursor-pointer"
                   required
                 >
-                  <option value="">Select Section</option>
+                  <option value="" className="bg-neutral-950">Select Section</option>
                   {availableSections.map((sec) => (
-                    <option key={sec} value={sec}>
+                    <option key={sec} value={sec} className="bg-neutral-950">
                       Section {sec}
                     </option>
                   ))}
@@ -285,29 +292,29 @@ export default function ProfileSetup() {
                   type="text"
                   value="No Section"
                   disabled
-                  className="w-full bg-neutral-900 border border-neutral-900 text-neutral-500 text-sm p-3 cursor-not-allowed outline-none"
+                  className="w-full bg-white/5 border border-white/5 text-neutral-500 text-[16px] p-3.5 cursor-not-allowed outline-none rounded-xl"
                 />
               )}
             </div>
           </div>
 
           {/* Current Position */}
-          <div className="space-y-1">
-            <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Current Position (Optional)</label>
+          <div className="space-y-2">
+            <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Current Position (Optional)</label>
             <input
               type="text"
               value={currentPosition}
               onChange={(e) => setCurrentPosition(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+              className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
               placeholder="e.g. Software Engineer at Google"
             />
           </div>
 
           {/* Bio */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400">Bio (Optional)</label>
-              <span className="text-[9px] text-neutral-500 tracking-wider">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 font-bold">Bio (Optional)</label>
+              <span className="text-[13px] text-neutral-500 tracking-wider">
                 {bio.length} / 250
               </span>
             </div>
@@ -316,19 +323,19 @@ export default function ProfileSetup() {
               onChange={(e) => setBio(e.target.value)}
               rows={4}
               maxLength={250}
-              className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 resize-none"
+              className="w-full glass-input focus:outline-none text-[16px] p-4 resize-none rounded-xl"
               placeholder="Tell classmates a bit about yourself..."
             />
           </div>
 
           {/* Phone Number */}
-          <div className="space-y-1">
-            <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Phone Number *</label>
+          <div className="space-y-2">
+            <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Phone Number *</label>
             <input
               type="text"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+              className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
               placeholder="e.g. 9876543210"
               required
             />
@@ -336,53 +343,53 @@ export default function ProfileSetup() {
 
           {/* LinkedIn, GitHub, Instagram Links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">LinkedIn URL (Optional)</label>
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">LinkedIn URL (Optional)</label>
               <input
                 type="text"
                 value={linkedinUrl}
                 onChange={(e) => setLinkedinUrl(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+                className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
                 placeholder="https://linkedin.com/in/username"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">
                 GitHub URL {isSoftwareBranch ? "*" : "(Optional)"}
               </label>
               <input
                 type="text"
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+                className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
                 placeholder="https://github.com/username"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block">Instagram URL (Optional)</label>
+            <div className="space-y-2">
+              <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Instagram URL (Optional)</label>
               <input
                 type="text"
                 value={instagramUrl}
                 onChange={(e) => setInstagramUrl(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-800 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300"
+                className="w-full glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
                 placeholder="https://instagram.com/username"
               />
             </div>
           </div>
 
           {/* Save Action */}
-          <div className="pt-4 border-t border-neutral-900">
+          <div className="pt-5 border-t border-white/5">
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-white text-black text-xs font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out cursor-pointer disabled:opacity-50"
+              className="w-full py-4 glass-button-primary text-[17px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-xl"
             >
               {submitting ? "Saving Profile..." : "Complete Setup"}
             </button>
           </div>
         </form>
 
-      </div>
+      </motion.div>
     </main>
   );
 }

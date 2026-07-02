@@ -63,7 +63,7 @@ public class UserService {
                 .firebaseUid(user.getFirebaseUid())
                 .email(user.getEmail())
                 .fullName(user.getFullName())
-                .profilePicture(user.getProfilePicture())
+                .profilePicture(user.getProfilePictureUrl())
                 .batch(user.getBatch())
                 .department(user.getDepartment())
                 .section(user.getSection())
