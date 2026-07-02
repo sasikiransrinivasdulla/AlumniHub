@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
@@ -20,7 +20,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { requestCache } from "@/services/cacheService";
 
-export default function MessagesPage() {
+function MessagesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryConversationId = searchParams.get("conversationId");
@@ -767,5 +767,17 @@ export default function MessagesPage() {
 
       </main>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <main className="flex min-h-screen items-center justify-center bg-black text-white">
+        <p className="text-[17px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Initializing Chat...</p>
+      </main>
+    }>
+      <MessagesContent />
+    </Suspense>
   );
 }
