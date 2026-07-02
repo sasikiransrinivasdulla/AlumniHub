@@ -25,6 +25,7 @@ public class ChatService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public ConversationDto getOrCreateConversation(String currentUserEmail, UUID targetUserId) {

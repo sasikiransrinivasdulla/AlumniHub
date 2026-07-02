@@ -64,10 +64,12 @@ public class AlumniHubApplication {
             dbUrl = System.getenv("DATABASE_URL");
         }
 
-        if (dbUrl != null && dbUrl.startsWith("postgresql://")) {
+        if (dbUrl != null && (dbUrl.startsWith("postgresql://") || dbUrl.startsWith("postgres://"))) {
             try {
-                // Format: postgresql://username:password@host:port/database?options
-                String cleanUrl = dbUrl.substring("postgresql://".length());
+                // Format: postgres(ql)://username:password@host:port/database?options
+                String cleanUrl = dbUrl.startsWith("postgresql://") 
+                        ? dbUrl.substring("postgresql://".length()) 
+                        : dbUrl.substring("postgres://".length());
                 int atIdx = cleanUrl.indexOf('@');
                 if (atIdx > 0) {
                     String credentials = cleanUrl.substring(0, atIdx);

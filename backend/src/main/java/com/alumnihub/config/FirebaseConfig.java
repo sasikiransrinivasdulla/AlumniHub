@@ -7,9 +7,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Configuration
 public class FirebaseConfig {
@@ -30,17 +32,16 @@ public class FirebaseConfig {
             String formattedKey = privateKey.replace("\\n", "\n");
 
             // GoogleCredentials requires 'client_id', 'client_email', 'private_key', and 'private_key_id'
-            String serviceAccountJson = String.format(
-                "{\n" +
-                "  \"type\": \"service_account\",\n" +
-                "  \"project_id\": \"%s\",\n" +
-                "  \"private_key_id\": \"dummy-private-key-id\",\n" +
-                "  \"private_key\": \"%s\",\n" +
-                "  \"client_email\": \"%s\",\n" +
-                "  \"client_id\": \"dummy-client-id\"\n" +
-                "}",
-                projectId, formattedKey, clientEmail
+            Map<String, Object> serviceAccountMap = Map.of(
+                "type", "service_account",
+                "project_id", projectId,
+                "private_key_id", "dummy-private-key-id",
+                "private_key", formattedKey,
+                "client_email", clientEmail,
+                "client_id", "dummy-client-id"
             );
+
+            String serviceAccountJson = new ObjectMapper().writeValueAsString(serviceAccountMap);
 
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(
