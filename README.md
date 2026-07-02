@@ -1,114 +1,155 @@
 # Alumni Hub 🎓
 
 [![Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20Spring%20Boot%20%7C%20PostgreSQL-black)](https://github.com/sasikiransrinivasdulla/AlumniHub)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![Vercel](https://img.shields.io/badge/Frontend-Vercel-blue)](https://alumni-hub-sigma.vercel.app)
+[![Render](https://img.shields.io/badge/Backend-Render-green)](https://alumnihub-onky.onrender.com)
 
 Alumni Hub is an enterprise-grade social networking platform built exclusively for university alumni. By utilizing robust identity verification via Google OAuth and Firebase, it provides classmates with a secure, private community where they can reconnect, share experiences, and network.
 
 ---
 
+## 🌟 Highlights
+
+- **Production Deployment**: Live production-grade deployment with Vercel hosting the frontend, Render running the Spring Boot backend, and Neon powering the serverless PostgreSQL database.
+- **Enterprise Authentication**: Secure, verified identity provisioning combining Google Sign-In, Firebase Client authentication, and server-side token validation.
+- **Community-Based Authorization**: Advanced privacy filter logic. Visibility of directory lists, feeds, and profiles is restricted dynamically based on user community credentials (academic batch, department, or section).
+- **JWT Security**: State-of-the-art request authorization utilizing custom-signed application JSON Web Tokens (JJWT 0.12.6) for subsequent REST calls.
+- **Real-Time Communication**: Seamless chat experience and instant push alerts using a dedicated WebSocket channel utilizing STOMP protocol, SockJS, and custom inbound interceptors.
+- **Responsive UI**: Sleek, high-fidelity black-and-white theme designed using Tailwind CSS that is optimized for desktops, tablets, and mobile devices.
+- **Cloud-Native Architecture**: High-speed Redis caching for feeds/comments and Cloudinary configuration for hosting post-sharing images.
+
+---
+
+## 🌐 Live Deployment
+
+- **Frontend Application**: [https://alumni-hub-sigma.vercel.app](https://alumni-hub-sigma.vercel.app)
+- **Backend Application API**: [https://alumnihub-onky.onrender.com](https://alumnihub-onky.onrender.com)
+
+---
+
 ## 🚀 Features
 
-### Current (v1.4.0 - Alumni Directory & Search)
-* **Alumni Directory and Search**:
-  - Exposes `GET /api/alumni` returning classmate lists within the academic community bounds.
-  - Exposes `GET /api/alumni/search?q=` supporting instant, case-insensitive classmate search by full name or current position.
-  - Exposes `GET /api/alumni/{id}` returning complete profile details. Rejects with `403 Forbidden` if the requested profile resides outside the requester's academic community.
-  - Sidebar and top search navigation routing, dynamic grids, and secure profile view components.
-* **Likes and Comments System**:
-  - **Likes**: Exposes `POST /api/posts/{postId}/like` (toggles user's like state on/off) and `GET /api/posts/{postId}/likes/count`.
-  - **Comments**: Exposes `POST /api/posts/{postId}/comments` (adds comments up to 500 chars), `GET /api/posts/{postId}/comments`, and `DELETE /api/comments/{commentId}`.
-  - **Ownership Verification**: Comment deletion is strictly limited to the comment owner.
-  - **Community Rule Enforcement**: Likes and comments are rejected with `403 Forbidden` if a user attempts to interact with a post outside their batch, department, or section community.
-* **Alumni Memories Feed**: Exposes REST APIs (`POST /api/posts`, `GET /api/posts/feed`, and `GET /api/posts/{id}`) to share and browse memories.
-* **Community-Based Visibility Restrictions**:
-  - `CST` and `ECT`: Feed and directory are visible strictly to users matching Batch + Department.
-  - `CSE`, `ECE`, `EEE`, `MECH`, `CIVIL`, `AIML`, `CAI`: Feed and directory are visible strictly to users matching Batch + Department + Section.
-  - Direct detail requests (`GET /api/posts/{id}` or `GET /api/alumni/{id}`) return `403 Forbidden` if user is outside the creator's/classmate's community.
-* **Secure Google Sign-In**: Powered by Firebase client authentication popup.
-* **Backend Verification**: ID Tokens are verified server-side using the Firebase Admin SDK to ensure security.
-* **Automatic User Provisioning**: Searches PostgreSQL for existing accounts; automatically provisions new user profiles.
-* **Modern JWT Authentication**: Custom signed application JSON Web Tokens (JJWT 0.12.6) for subsequent requests.
-* **User Profile Management**: REST API endpoints (`GET /api/user/me` and `PUT /api/user/me`) with custom Spring validations (exact 10-digit phone, max 250-character bio, LinkedIn, GitHub, and Instagram URLs validation).
-* **Branch-Based Conditional Validation**: GitHub profile URL is conditionally required for software-related branches (`CSE`, `CST`, `AIML`, `CAI`) and optional for all other branches.
-* **Mandatory First-Time Setup**: Automatic routing redirect logic locking dashboard access until users submit graduation details.
-* **Dynamic Dropdown Selectors**: Department-based Section options (e.g. CSE -> A/B/C/D, CST -> No Section).
-* **Responsive B&W Memories Dashboard**: Split-column layout displaying user info card next to recent community memories feed, with a "Share a Memory" submission modal. Includes a responsive comments section modal supporting real-time likes toggling, scrolling comments list sorted newest first, comment submission, and deletion of own comments.
+### 🔐 Authentication & Security
+- **Secure Google Sign-In**: Client-side Firebase OAuth integration using interactive sign-in popups.
+- **Server Verification**: Secure server-side validation of Google ID tokens using the Firebase Admin SDK.
+- **Automatic Provisioning**: Seamless database lookup and automatic signup provisioning for first-time login users.
+- **Custom JWT Auth**: High-performance session security using signed JSON Web Tokens for API requests.
 
-### Planned Community Features
-* **Cloudinary Image Uploads**: High-performance image hosting for posts and profile pictures.
+### 🛡️ Community & Access Control
+- **Visibility Restrictions**: Visibility bounds automatically enforced across CST, ECT (restricted to matching Batch + Department) and CSE, ECE, EEE, MECH, CIVIL, AIML, CAI (restricted to matching Batch + Department + Section).
+- **API Guarding**: Detail queries throw a `403 Forbidden` error if requested content belongs to a classmate outside the user's community bounds.
+
+### 📢 Social Platform
+- **Alumni Memories Feed**: Publish and browse recent college or graduation photos along with descriptive captions.
+- **Likes & Comments System**: Toggle likes, view total counts, and write comments up to 500 characters.
+- **Ownership Verification**: Safe editing where comment deletion and actions are strictly constrained to the author.
+
+### 👤 User Profiles
+- **Profile Management**: Update user metadata (full name, phone, biography, Instagram, LinkedIn, and GitHub links).
+- **Conditional Branch Validations**: Software branches (CSE, CST, AIML, CAI) require GitHub URLs, while non-software branches maintain it as optional.
+- **Mandatory Setup Wall**: Route locking that blocks dashboard view access until graduation and section setup is completed.
+
+### 💬 Messaging & Notifications
+- **Real-Time Message Delivery**: Group messaging and peer chats powered by STOMP over WebSockets.
+- **Unread Counters**: Track active unread counts across notification threads.
+- **WebSocket Auth Interceptors**: Token validation at connection handshake.
+
+### 🖼️ Media & Storage
+- **Cloudinary Image Hosting**: Fast, high-performance upload pipelines for memories and profile pictures.
+- **Redis Cache Storage**: Backend caching configuration for memories feed and comment arrays.
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-* **Framework**: Next.js 16 (App Router)
-* **Language**: TypeScript
-* **Styling**: Tailwind CSS
-* **Authentication**: Firebase Client SDK
-
-### Backend
-* **Framework**: Spring Boot 3.3.4
-* **Language**: Java 21
-* **Database**: PostgreSQL (Neon Serverless DB)
-* **Security**: Spring Security & Custom JWT Filters
-* **Verification**: Firebase Admin SDK
-* **Utilities**: Lombok, Jackson
+| Domain | Technologies |
+| :--- | :--- |
+| **Frontend** | Next.js 16 (App Router), React, TypeScript, Tailwind CSS, Firebase Client SDK, STOMP/SockJS, Context API |
+| **Backend** | Java 21, Spring Boot 3.3.4, Spring Security, Spring Data JPA, Hibernate, JJWT 0.12.6, Firebase Admin SDK, Redis Cache, WebSockets, Maven |
+| **Database** | PostgreSQL (Neon Serverless DB) |
+| **Media Hosting**| Cloudinary API |
+| **Deployment** | Vercel (Frontend), Render (Backend) |
 
 ---
 
 ## 📐 Project Architecture
 
-```mermaid
-graph TD
-    Client[Next.js Client] -->|1. Google Sign-In| FirebaseProvider[Firebase OAuth Provider]
-    FirebaseProvider -->|2. Returns ID Token| Client
-    Client -->|3. POST /api/auth/google| AuthController[AuthController]
-    AuthController -->|4. Verify Token| FirebaseAdmin[Firebase Admin SDK]
-    FirebaseAdmin -->|5. Returns Token Payload| AuthController
-    AuthController -->|6. Lookup / Save User| UserRepository[UserRepository]
-    UserRepository -->|7. Query / Insert| PostgreSQL[(PostgreSQL Database)]
-    UserRepository -->|8. Return User| AuthController
-    AuthController -->|9. Sign JWT| JwtUtil[JwtUtil]
-    AuthController -->|10. Return JWT + Profile| Client
+```text
+                  +-----------------------------------+
+                  |           Google OAuth            |
+                  +-----------------------------------+
+                                    |
+                                    v
+                  +-----------------------------------+
+                  |       Firebase Auth Client        |
+                  +-----------------------------------+
+                                    |
+                                    v
++------------+    +-----------------------------------+    +----------------------+
+| Cloudinary |<-->|          Next.js Frontend         |<-->| WebSocket Connection |
++------------+    +-----------------------------------+    |   (STOMP / SockJS)   |
+                                    |                      +----------------------+
+                                    | REST APIs + JWT                 ^
+                                    v                                 |
+                  +-----------------------------------+               |
+                  |        Spring Boot Backend        |               |
+                  +-----------------------------------+               |
+                                    |                                 |
+                                    v                                 |
+                  +-----------------------------------+               |
+                  |          Spring Security          |<--------------+
+                  +-----------------------------------+
+                                    |
+                                    |--[ Firebase Admin SDK ]
+                                    v
+                  +-----------------------------------+
+                  |           Service Layer           |<===> [ Redis Cache ]
+                  +-----------------------------------+
+                                    |
+                                    v
+                  +-----------------------------------+
+                  |         Repository Layer          |
+                  +-----------------------------------+
+                                    |
+                                    v
+                  +-----------------------------------+
+                  |        PostgreSQL Database        |
+                  +-----------------------------------+
 ```
-
-For a deeper dive into packages and state flow, refer to [docs/architecture.md](docs/architecture.md).
 
 ---
 
 ## 📂 Folder Structure
 
-```
+```text
 AlumniHub/
-├── backend/                   # Spring Boot 3 Backend
+├── backend/                        # Spring Boot 3 Backend Application
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/alumnihub/
-│   │   │   │   ├── config/    # Third-party beans (FirebaseConfig)
-│   │   │   │   ├── controller/# REST Controller layer (AuthController)
-│   │   │   │   ├── dto/       # Data Transfer Objects
-│   │   │   │   ├── entity/    # JPA Entities (User)
-│   │   │   │   ├── repository/# JpaRepositories (UserRepository)
-│   │   │   │   ├── security/  # Filters & WebSecurity configs (JwtFilter)
-│   │   │   │   └── service/   # Business logic (AuthService)
-│   │   │   └── resources/     # Properties & application config
-│   │   └── test/              # Integration & Unit test suite
-│   ├── pom.xml                # Maven Dependencies
-│   └── .env.example           # Backend config template
+│   │   │   │   ├── config/         # Third-party configurations (Firebase, Cloudinary, Redis, WebSockets)
+│   │   │   │   ├── controller/     # REST Controllers mapping request endpoints
+│   │   │   │   ├── dto/            # Data Transfer Objects for client-server serialization
+│   │   │   │   ├── entity/         # JPA Domain Entities representing PostgreSQL tables
+│   │   │   │   ├── repository/     # Data access layer extending JpaRepository 
+│   │   │   │   ├── security/       # JWT Filters, token utilities, and web security chain configuration
+│   │   │   │   └── service/        # Core transaction-bound business logic services
+│   │   │   └── resources/          # Resource configurations and properties
+│   │   └── test/                   # JUnit integration and unit test suite
+│   ├── pom.xml                     # Maven project configuration and dependencies
+│   └── .env.example                # Template for backend secret properties
 │
-├── frontend/                  # Next.js 16 Frontend
-│   ├── app/                   # Next.js App Router (Page views)
-│   ├── components/            # Reusable UI elements
-│   ├── lib/                   # Integrations (firebase.ts)
-│   ├── services/              # API and storage clients
-│   ├── package.json           # Frontend dependencies
-│   └── .env.example           # Frontend config template
+├── frontend/                       # Next.js 16 Client Application
+│   ├── app/                        # App Router defining route segments (dashboard, directories, chat)
+│   ├── components/                 # Reusable UI components (Sidebar, modal, feeds)
+│   ├── lib/                        # Client-side configuration utilities (Firebase initialized app)
+│   ├── services/                   # Fetch clients calling REST endpoints (auth, post, chat, profiles)
+│   ├── package.json                # npm dependencies and build tasks
+│   └── .env.example                # Template for client environment properties
 │
-└── docs/                      # Technical Documentation
+└── docs/                           # Core Technical documentation and architectures
 ```
 
 ---
@@ -118,15 +159,31 @@ AlumniHub/
 Before starting locally, configure your environment variables.
 
 ### Frontend (`frontend/.env.local`)
-Copy `frontend/.env.example` to `frontend/.env.local` and fill in:
-* `NEXT_PUBLIC_API_URL`: Path to backend server (e.g., `http://localhost:8080`).
-* Firebase Web Config variables (`API_KEY`, `AUTH_DOMAIN`, etc.).
+Create a `frontend/.env.local` file by copying the `frontend/.env.example` template:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+```
 
 ### Backend (`backend/.env`)
-Copy `backend/.env.example` to `backend/.env` and fill in:
-* `DATABASE_URL`: Connection string to PostgreSQL.
-* `JWT_SECRET`: Base64-encoded signing key.
-* Firebase Admin JSON parameters (`PROJECT_ID`, `CLIENT_EMAIL`, `PRIVATE_KEY`).
+Create a `backend/.env` file by copying the `backend/.env.example` template:
+```env
+DATABASE_URL=postgresql://user:password@host:port/dbname
+JWT_SECRET=your_base64_encoded_jwt_secret_key
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_CLIENT_EMAIL=your_firebase_client_email
+FIREBASE_PRIVATE_KEY=your_firebase_private_key
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
 
 ---
 
@@ -135,29 +192,29 @@ Copy `backend/.env.example` to `backend/.env` and fill in:
 ### Prerequisites
 * Java 21 JDK installed
 * Node.js v18+ and npm installed
-* Running PostgreSQL database instance
+* Running PostgreSQL database and Redis instance
 
 ### Running the Backend
 1. Navigate to the backend directory:
    ```bash
    cd backend
    ```
-2. Copy environment properties and configure:
+2. Setup environment variables:
    ```bash
    cp .env.example .env
    ```
-3. Run compilation and startup:
+3. Compile and start the application:
    ```bash
    ./mvnw spring-boot:run
    ```
-   The backend starts on `http://localhost:8080`.
+   The API server will run on [http://localhost:8080](http://localhost:8080).
 
 ### Running the Frontend
 1. Navigate to the frontend directory:
    ```bash
    cd frontend
    ```
-2. Copy environment properties and configure:
+2. Setup client environment variables:
    ```bash
    cp .env.example .env.local
    ```
@@ -165,33 +222,60 @@ Copy `backend/.env.example` to `backend/.env` and fill in:
    ```bash
    npm install
    ```
-4. Run development server:
+4. Start the development server:
    ```bash
    npm run dev
    ```
-   Open `http://localhost:3000` to access the application.
+   Open [http://localhost:3000](http://localhost:3000) to view the client.
+
+---
+
+## 📋 API Reference
+
+| Endpoint | Method | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `/api/auth/google` | `POST` | Authenticates Firebase Google ID Token & returns app JWT | No |
+| `/api/health` | `GET` | Health status checker | No |
+| `/api/user/me` | `GET` | Returns currently authenticated user profile | Yes (JWT) |
+| `/api/user/me` | `PUT` | Updates profile details (biography, contact, social links) | Yes (JWT) |
+| `/api/alumni` | `GET` | List classmates within community visibility bounds | Yes (JWT) |
+| `/api/alumni/{id}` | `GET` | Retrieve complete details of a specific alumnus | Yes (JWT) |
+| `/api/alumni/search` | `GET` | Search directory by name or current position | Yes (JWT) |
+| `/api/posts` | `POST` | Post a college memory with caption & Cloudinary image | Yes (JWT) |
+| `/api/posts/feed` | `GET` | List chronological memories feed filtered by community | Yes (JWT) |
+| `/api/posts/{id}` | `GET` | Retrieve details of a specific memory post | Yes (JWT) |
+| `/api/posts/{id}/like` | `POST` | Toggle like state (like/unlike) | Yes (JWT) |
+| `/api/posts/{id}/comments`| `GET` | List comments array for a post | Yes (JWT) |
+| `/api/posts/{id}/comments`| `POST` | Submit comment under memory post (max 500 chars) | Yes (JWT) |
+| `/api/comments/{id}` | `DELETE`| Remove a specific comment (limited to comment creator) | Yes (JWT) |
 
 ---
 
 ## 🗺️ Roadmap
-- [x] Initial Project Setup (Next.js 16 & Spring Boot 3)
-- [x] Complete Google OAuth Authentication (Firebase Admin & JWT)
-- [x] Mandatory First-time Profile Setup & Onboarding Flow
-- [ ] Classmate restricted directory listing
-- [ ] Photo uploads & Cloudinary integration
-- [ ] Social Feed (Posts, Comments, Likes)
 
----
+### Completed Features
+- [x] Next.js 16 Client App Router & Spring Boot 3 Framework integrations.
+- [x] Complete Google OAuth Authentication flow via Firebase Client & Server SDKs.
+- [x] Custom JJWT application tokens for secure API queries.
+- [x] Mandated onboarding page redirect locking feed/directory access.
+- [x] Classmate directories listing and search query filtering.
+- [x] Photo upload pipeline utilizing Cloudinary file storage.
+- [x] Social feed offering memory posts, like toggles, and nested comments.
+- [x] WebSocket channel for STOMP Messaging and notifications.
+- [x] Live cloud deployments on Vercel and Render using Neon serverless database.
 
-## 📸 Screenshots
-*(Screenshots will be added as visual features are integrated).*
-
----
-
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Upcoming Features
+- [ ] **Real-time Chat improvements**: Dynamic message status ticks and online trackers.
+- [ ] **Alumni Events**: Organize reunions, scheduling calendars, and rsvp forms.
+- [ ] **Mentorship**: Connect alumni mentors with current students for career guidance.
+- [ ] **Job Portal**: Post job referrals, resume review drops, and career hiring threads.
+- [ ] **Push Notifications**: Receive alerts on mobile and desktop via WebPush API.
+- [ ] **Admin Dashboard**: Manage user onboarding verification requests.
+- [ ] **Progressive Web App**: Fully functional offline capabilities and install shortcuts.
+- [ ] **Batch Reunion Events**: Event tickets management and gallery sharing.
 
 ---
 
 ## 👤 Author
+
 * **Sasikiran Srinivas Dulla** - *Full Stack Developer* - [GitHub Profile](https://github.com/sasikiransrinivasdulla)
