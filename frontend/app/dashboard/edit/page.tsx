@@ -48,6 +48,11 @@ export default function EditProfile() {
   const [department, setDepartment] = useState("");
   const [section, setSection] = useState("");
   const [currentPosition, setCurrentPosition] = useState("");
+  const [currentCompany, setCurrentCompany] = useState("");
+  const [currentCity, setCurrentCity] = useState("");
+  const [skills, setSkills] = useState("");
+  const [graduationYear, setGraduationYear] = useState("");
+  const [privacyLevel, setPrivacyLevel] = useState("PUBLIC");
   const [bio, setBio] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -73,6 +78,11 @@ export default function EditProfile() {
         setDepartment(profile.department || "");
         setSection(profile.section || "");
         setCurrentPosition(profile.currentPosition || "");
+        setCurrentCompany(profile.currentCompany || "");
+        setCurrentCity(profile.currentCity || "");
+        setSkills(profile.skills || "");
+        setGraduationYear(profile.graduationYear || "");
+        setPrivacyLevel(profile.privacyLevel || "PUBLIC");
         setBio(profile.bio || "");
         setPhoneNumber(profile.phoneNumber || "");
         setLinkedinUrl(profile.linkedinUrl || "");
@@ -107,7 +117,6 @@ export default function EditProfile() {
     if (!files || files.length === 0) return;
     const file = files[0];
 
-    // Client-side validations
     if (file.size > 10 * 1024 * 1024) {
       setError("File size exceeds the maximum limit of 10 MB.");
       return;
@@ -127,7 +136,6 @@ export default function EditProfile() {
         setUploadProgress(percent);
       });
       setProfilePicture(updatedUser.profilePicture);
-      // Also update sidebar model
       setCurrentUser(updatedUser);
     } catch (err: any) {
       console.error(err);
@@ -145,7 +153,6 @@ export default function EditProfile() {
     try {
       const updatedUser = await deleteProfileImage();
       setProfilePicture(updatedUser.profilePicture);
-      // Also update sidebar model
       setCurrentUser(updatedUser);
     } catch (err: any) {
       console.error(err);
@@ -159,7 +166,6 @@ export default function EditProfile() {
     e.preventDefault();
     setError(null);
 
-    // Client-side validations
     if (!fullName.trim()) {
       setError("Full Name is required.");
       return;
@@ -181,10 +187,6 @@ export default function EditProfile() {
       setError("Please select a Section.");
       return;
     }
-    if (currentPosition.length > 100) {
-      setError("Current Position must not exceed 100 characters.");
-      return;
-    }
     if (bio.length > 250) {
       setError("Bio must not exceed 250 characters.");
       return;
@@ -194,15 +196,14 @@ export default function EditProfile() {
       return;
     }
 
-    // Branch-based GitHub validation
     const isSoftwareBranch = ["CSE", "CST", "AIML", "CAI"].includes(department);
     if (isSoftwareBranch && !githubUrl.trim()) {
-      setError(`GitHub profile URL is required for software-related branch (${department}).`);
+      setError(`GitHub profile URL is required for software branch (${department}).`);
       return;
     }
 
     if (githubUrl && !/^(https?:\/\/)?(www\.)?github\.com\/[a-zA-Z0-9_-]+\/?$/.test(githubUrl.trim())) {
-      setError("Please enter a valid GitHub profile URL (e.g., https://github.com/username).");
+      setError("Please enter a valid GitHub URL.");
       return;
     }
     if (linkedinUrl && !/^(https?:\/\/)?([a-zA-Z0-9-]+\.)?linkedin\.com\/.*$/.test(linkedinUrl.trim())) {
@@ -210,7 +211,7 @@ export default function EditProfile() {
       return;
     }
     if (instagramUrl && !/^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/.test(instagramUrl.trim())) {
-      setError("Please enter a valid Instagram URL (e.g., https://instagram.com/username).");
+      setError("Please enter a valid Instagram URL.");
       return;
     }
 
@@ -222,6 +223,11 @@ export default function EditProfile() {
         department,
         section: section || null,
         currentPosition: currentPosition.trim() || null,
+        currentCompany: currentCompany.trim() || null,
+        currentCity: currentCity.trim() || null,
+        skills: skills.trim() || null,
+        graduationYear: graduationYear.trim() || null,
+        privacyLevel,
         bio: bio.trim() || null,
         phoneNumber: phoneNumber.trim(),
         linkedinUrl: linkedinUrl.trim() || null,
@@ -229,7 +235,7 @@ export default function EditProfile() {
         instagramUrl: instagramUrl.trim() || null,
       });
       setCurrentUser(updated);
-      router.push("/dashboard");
+      router.push("/profile");
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to update profile.");
@@ -241,7 +247,7 @@ export default function EditProfile() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-xs tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Edit form...</p>
+        <p className="text-[12px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Edit form...</p>
       </main>
     );
   }
@@ -250,26 +256,21 @@ export default function EditProfile() {
   const isSoftwareBranch = ["CSE", "CST", "AIML", "CAI"].includes(department);
 
   return (
-    <div className="min-h-screen bg-black text-white flex overflow-hidden">
-      {/* Fixed Left Sidebar */}
+    <div className="min-h-screen bg-black text-white flex overflow-hidden select-none">
       <Sidebar user={currentUser} />
 
-      {/* Main Edit Container */}
-      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
-        
-        {/* Glow effect */}
+      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
 
-        <div className="z-10 w-full max-w-xl mx-auto px-4 md:px-8 py-8 md:py-12 flex flex-col space-y-6">
+        <div className="z-10 w-full max-w-xl mx-auto px-6 md:px-8 py-8 md:py-12 flex flex-col space-y-6">
           
-          {/* Header */}
           <div className="pb-4 border-b border-white/5">
             <h1 className="text-[20px] md:text-[22px] font-light tracking-[0.15em] uppercase text-white leading-tight">Edit Profile</h1>
             <p className="text-[12px] tracking-wider text-neutral-450 mt-1.5 uppercase">Update your professional details below</p>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-xs tracking-wider">
+            <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-xs tracking-wider rounded-xl text-center">
               {error}
             </div>
           )}
@@ -279,11 +280,11 @@ export default function EditProfile() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             onSubmit={handleSubmit} 
-            className="space-y-6"
+            className="space-y-5 text-[12px]"
           >
-            {/* Profile Picture Upload Section */}
-            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-neutral-900/40 border border-neutral-900 rounded-2xl">
-              <div className="relative w-20 h-20 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center overflow-hidden">
+            {/* Profile Picture Section */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 bg-neutral-900/40 border border-white/5 rounded-2xl">
+              <div className="relative w-16 h-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {profilePicture ? (
                   <img
                     src={profilePicture}
@@ -298,7 +299,7 @@ export default function EditProfile() {
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <label className="text-[10px] tracking-widest uppercase text-neutral-400 font-bold">Profile Picture</label>
                 <div className="flex flex-wrap gap-2">
-                  <label className="px-4 py-2 bg-white text-black text-[10px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 cursor-pointer text-center rounded-xl">
+                  <label className="px-4 py-2 bg-white text-black text-[10px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 cursor-pointer text-center rounded-full">
                     {uploadingImage ? `Uploading...` : "Change Picture"}
                     <input
                       type="file"
@@ -313,7 +314,7 @@ export default function EditProfile() {
                       type="button"
                       onClick={handleRemovePicture}
                       disabled={uploadingImage}
-                      className="px-4 py-2 bg-transparent text-white text-[10px] font-semibold tracking-widest uppercase border border-neutral-800 hover:border-white transition-all duration-305 cursor-pointer rounded-xl"
+                      className="px-4 py-2 bg-transparent text-white text-[10px] font-semibold tracking-widest uppercase border border-white/10 hover:border-white transition-colors cursor-pointer rounded-full"
                     >
                       Remove
                     </button>
@@ -338,7 +339,7 @@ export default function EditProfile() {
                   type="text"
                   value={email}
                   disabled
-                  className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-sm p-3 cursor-not-allowed outline-none rounded-xl"
+                  className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-[13px] px-3.5 py-2.5 cursor-not-allowed outline-none rounded-full"
                 />
               </div>
               <div className="space-y-1">
@@ -347,74 +348,82 @@ export default function EditProfile() {
                   type="text"
                   value={firebaseUid}
                   disabled
-                  className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-sm p-3 cursor-not-allowed outline-none rounded-xl"
+                  className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-[13px] px-3.5 py-2.5 cursor-not-allowed outline-none rounded-full"
                 />
               </div>
             </div>
 
             {/* Editable Full Name */}
             <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Full Name *</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Full Name *</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
+                className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
                 placeholder="Your Full Name"
                 required
               />
             </div>
 
+            {/* Privacy Settings Selector */}
+            <div className="space-y-1">
+              <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Profile Privacy Level</label>
+              <select
+                value={privacyLevel}
+                onChange={(e) => setPrivacyLevel(e.target.value)}
+                className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full cursor-pointer"
+              >
+                <option value="PUBLIC" className="bg-neutral-950">🌍 Public (Visible to everyone)</option>
+                <option value="ACADEMIC" className="bg-neutral-950">🎓 Academic Community (Visible only to batch/dept matches)</option>
+                <option value="IN_TOUCH_ONLY" className="bg-neutral-950">🔒 In-Touch Only (Visible only to accepted connections)</option>
+              </select>
+            </div>
+
             {/* Dropdown selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Batch *</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Batch *</label>
                 <select
                   value={batch}
                   onChange={(e) => setBatch(e.target.value)}
-                  className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl cursor-pointer"
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full cursor-pointer"
                   required
                 >
-                  <option value="">Select Batch</option>
+                  <option value="" className="bg-neutral-950">Select Batch</option>
                   {BATCH_OPTIONS.map((range) => (
-                    <option key={range} value={range}>
-                      {range}
-                    </option>
+                    <option key={range} value={range} className="bg-neutral-950">{range}</option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Department *</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Department *</label>
                 <select
                   value={department}
                   onChange={(e) => handleDepartmentChange(e.target.value)}
-                  className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-xs sm:text-sm p-3 transition-colors duration-300 rounded-xl cursor-pointer"
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full cursor-pointer"
                   required
                 >
-                  <option value="">Select Department</option>
+                  <option value="" className="bg-neutral-950">Select Department</option>
                   {DEPARTMENT_OPTIONS.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
+                    <option key={dept} value={dept} className="bg-neutral-950">{dept}</option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Section</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Section</label>
                 {availableSections.length > 0 ? (
                   <select
                     value={section}
                     onChange={(e) => setSection(e.target.value)}
-                    className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl cursor-pointer"
+                    className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full cursor-pointer"
                     required
                   >
-                    <option value="">Select Section</option>
+                    <option value="" className="bg-neutral-950">Select Section</option>
                     {availableSections.map((sec) => (
-                      <option key={sec} value={sec}>
-                        Section {sec}
-                      </option>
+                      <option key={sec} value={sec} className="bg-neutral-950">Section {sec}</option>
                     ))}
                   </select>
                 ) : (
@@ -422,28 +431,78 @@ export default function EditProfile() {
                     type="text"
                     value="No Section"
                     disabled
-                    className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-sm p-3 cursor-not-allowed outline-none rounded-xl"
+                    className="w-full bg-neutral-900/60 border border-neutral-900 text-neutral-500 text-[13px] px-3.5 py-2.5 cursor-not-allowed outline-none rounded-full"
                   />
                 )}
               </div>
             </div>
 
-            {/* Current Position */}
+            {/* Position and Company */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Current Position (Optional)</label>
+                <input
+                  type="text"
+                  value={currentPosition}
+                  onChange={(e) => setCurrentPosition(e.target.value)}
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="e.g. Software Engineer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Current Company (Optional)</label>
+                <input
+                  type="text"
+                  value={currentCompany}
+                  onChange={(e) => setCurrentCompany(e.target.value)}
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="e.g. Google"
+                />
+              </div>
+            </div>
+
+            {/* City and Graduation Year */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Current City (Optional)</label>
+                <input
+                  type="text"
+                  value={currentCity}
+                  onChange={(e) => setCurrentCity(e.target.value)}
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="e.g. Bangalore"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Graduation Year (Optional)</label>
+                <input
+                  type="text"
+                  value={graduationYear}
+                  onChange={(e) => setGraduationYear(e.target.value)}
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="e.g. 2024"
+                />
+              </div>
+            </div>
+
+            {/* Skills */}
             <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Current Position (Optional)</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Skills (Optional, comma-separated)</label>
               <input
                 type="text"
-                value={currentPosition}
-                onChange={(e) => setCurrentPosition(e.target.value)}
-                className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
-                placeholder="e.g. Software Engineer at Google"
+                value={skills}
+                onChange={(e) => setSkills(e.target.value)}
+                className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                placeholder="e.g. React, Spring Boot, PostgreSQL"
               />
             </div>
 
             {/* Bio */}
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 font-bold">Bio (Optional)</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 font-bold">Bio (Optional)</label>
                 <span className="text-[9px] text-neutral-500 tracking-wider">
                   {bio.length} / 250
                 </span>
@@ -451,58 +510,58 @@ export default function EditProfile() {
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                rows={4}
+                rows={3}
                 maxLength={250}
-                className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 resize-none rounded-xl"
+                className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] p-3 transition-colors duration-300 resize-none rounded-xl"
                 placeholder="Tell classmates a bit about yourself..."
               />
             </div>
 
             {/* Phone Number */}
             <div className="space-y-1">
-              <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Phone Number *</label>
+              <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Phone Number *</label>
               <input
                 type="text"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
+                className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
                 placeholder="e.g. 9876543210"
                 required
               />
             </div>
 
-            {/* LinkedIn, GitHub, Instagram Links */}
+            {/* Social Links */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">LinkedIn URL (Optional)</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">LinkedIn URL (Optional)</label>
                 <input
                   type="text"
                   value={linkedinUrl}
                   onChange={(e) => setLinkedinUrl(e.target.value)}
-                  className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
-                  placeholder="https://linkedin.com/in/username"
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="linkedin.com/in/username"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">
-                  GitHub URL {isSoftwareBranch ? "*" : "(Optional)"}
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">
+                  GitHub URL {isSoftwareBranch ? "*" : ""}
                 </label>
                 <input
                   type="text"
                   value={githubUrl}
                   onChange={(e) => setGithubUrl(e.target.value)}
-                  className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
-                  placeholder="https://github.com/username"
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="github.com/username"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-400 block font-bold">Instagram URL (Optional)</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Instagram URL (Optional)</label>
                 <input
                   type="text"
                   value={instagramUrl}
                   onChange={(e) => setInstagramUrl(e.target.value)}
-                  className="w-full bg-neutral-900/60 border border-neutral-850 focus:border-white focus:outline-none text-white text-sm p-3 transition-colors duration-300 rounded-xl"
-                  placeholder="https://instagram.com/username"
+                  className="w-full bg-neutral-900/60 border border-white/5 focus:border-white focus:outline-none text-white text-[13px] px-3.5 py-2.5 transition-colors duration-300 rounded-full"
+                  placeholder="instagram.com/username"
                 />
               </div>
             </div>
@@ -518,9 +577,9 @@ export default function EditProfile() {
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/profile")}
                 disabled={submitting}
-                className="flex-1 py-3 bg-transparent text-white text-[13px] font-semibold tracking-[0.18em] uppercase border border-white/10 hover:border-white transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-full"
+                className="flex-1 py-3 bg-transparent text-white text-[13px] font-semibold tracking-[0.18em] uppercase border border-white/10 hover:border-white transition-all duration-305 ease-out cursor-pointer disabled:opacity-50 rounded-full"
               >
                 Cancel
               </button>

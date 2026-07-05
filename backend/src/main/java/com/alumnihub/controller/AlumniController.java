@@ -23,9 +23,27 @@ public class AlumniController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<UserDto>> searchDirectory(Principal principal, @RequestParam("q") String query) {
-        List<UserDto> matchedAlumni = alumniService.searchVisibleAlumni(principal.getName(), query);
+    public ResponseEntity<List<UserDto>> searchDirectory(
+            Principal principal,
+            @RequestParam(value = "q", required = false) String query,
+            @RequestParam(value = "company", required = false) String company,
+            @RequestParam(value = "position", required = false) String position,
+            @RequestParam(value = "batch", required = false) String batch,
+            @RequestParam(value = "department", required = false) String department,
+            @RequestParam(value = "section", required = false) String section,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "skills", required = false) String skills
+    ) {
+        List<UserDto> matchedAlumni = alumniService.searchVisibleAlumniWithFilters(
+                principal.getName(), query, company, position, batch, department, section, city, skills
+        );
         return ResponseEntity.ok(matchedAlumni);
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<UserDto>> getRecommendations(Principal principal) {
+        List<UserDto> recommended = alumniService.getPeopleYouMayKnow(principal.getName());
+        return ResponseEntity.ok(recommended);
     }
 
     @GetMapping("/{id}")

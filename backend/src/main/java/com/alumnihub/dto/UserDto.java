@@ -22,6 +22,15 @@ public class UserDto {
     private String section;
     private String bio;
     private String currentPosition;
+    private String currentCompany;
+    private String currentCity;
+    private String skills;
+    private String graduationYear;
+    private String privacyLevel;
+    private String inTouchStatus;
+    private LocalDateTime inTouchConnectedSince;
+    private String contactRequestStatus;
+    private Boolean hasFullAccess;
     private String phoneNumber;
     private String linkedinUrl;
     private String githubUrl;

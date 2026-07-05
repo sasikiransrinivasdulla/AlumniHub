@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMemoriesFeed, Post } from "@/services/postService";
 import { toggleLike, getComments, addComment, deleteComment, CommentDto } from "@/services/likeCommentService";
+import { getInTouchConnections, getTimelineEntries, addTimelineEntry, deleteTimelineEntry, TimelineEntry } from "@/services/alumniService";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -17,6 +18,18 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
 
+  // Statistics & Connections
+  const [connections, setConnections] = useState<UserProfile[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+
+  // Timeline Addition State
+  const [showAddTimeline, setShowAddTimeline] = useState(false);
+  const [newTimelineYear, setNewTimelineYear] = useState(new Date().getFullYear());
+  const [newTimelineTitle, setNewTimelineTitle] = useState("");
+  const [newTimelineDesc, setNewTimelineDesc] = useState("");
+  const [addingTimeline, setAddingTimeline] = useState(false);
+
   // Comments / Detail modal state
   const [activePostForComments, setActivePostForComments] = useState<Post | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
@@ -24,6 +37,17 @@ export default function ProfilePage() {
   const [newCommentText, setNewCommentText] = useState("");
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  const fetchProfileTimeline = async (userId: string) => {
+    try {
+      const list = await getTimelineEntries(userId);
+      setTimeline(list);
+    } catch (err) {
+      console.error("Failed to fetch timeline:", err);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -34,6 +58,13 @@ export default function ProfilePage() {
           return;
         }
         setUser(profile);
+
+        // Fetch In-Touch & Timeline in background
+        getInTouchConnections()
+          .then(setConnections)
+          .catch(console.error);
+
+        fetchProfileTimeline(profile.id);
 
         // Fetch feed and filter own posts
         try {
@@ -56,10 +87,45 @@ export default function ProfilePage() {
     loadData();
   }, [router]);
 
+  const handleAddTimeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTimelineTitle.trim()) return;
+
+    setAddingTimeline(true);
+    try {
+      await addTimelineEntry({
+        year: Number(newTimelineYear),
+        title: newTimelineTitle.trim(),
+        description: newTimelineDesc.trim()
+      });
+      setNewTimelineTitle("");
+      setNewTimelineDesc("");
+      setShowAddTimeline(false);
+      if (user) {
+        await fetchProfileTimeline(user.id);
+      }
+    } catch (err: any) {
+      alert("Failed to add milestone: " + err.message);
+    } finally {
+      setAddingTimeline(false);
+    }
+  };
+
+  const handleDeleteTimelineItem = async (entryId: string) => {
+    if (!confirm("Are you sure you want to delete this timeline milestone?")) return;
+    try {
+      await deleteTimelineEntry(entryId);
+      if (user) {
+        await fetchProfileTimeline(user.id);
+      }
+    } catch (err: any) {
+      alert("Failed to delete milestone: " + err.message);
+    }
+  };
+
   const handleLikeToggle = async (postId: string) => {
     try {
       const result = await toggleLike(postId);
-      // Update myPosts
       setMyPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -68,7 +134,6 @@ export default function ProfilePage() {
         )
       );
 
-      // Update activePostForComments if open
       if (activePostForComments && activePostForComments.id === postId) {
         setActivePostForComments((prev) =>
           prev
@@ -106,10 +171,6 @@ export default function ProfilePage() {
       setCommentSubmitError("Comment must not be empty.");
       return;
     }
-    if (commentVal.length > 500) {
-      setCommentSubmitError("Comment must not exceed 500 characters.");
-      return;
-    }
 
     setSubmittingComment(true);
     try {
@@ -117,7 +178,6 @@ export default function ProfilePage() {
       setComments([created, ...comments]);
       setNewCommentText("");
 
-      // Increment comments count dynamically
       setMyPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === activePostForComments.id
@@ -125,7 +185,6 @@ export default function ProfilePage() {
             : p
         )
       );
-      // Update local post count reference
       setActivePostForComments({
         ...activePostForComments,
         commentsCount: activePostForComments.commentsCount + 1,
@@ -138,12 +197,11 @@ export default function ProfilePage() {
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!activePostForComments) return;
+    if (!activePostForComments || !confirm("Are you sure you want to delete this comment?")) return;
     try {
       await deleteComment(commentId);
       setComments(comments.filter((c) => c.id !== commentId));
 
-      // Decrement comments count dynamically
       setMyPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === activePostForComments.id
@@ -151,7 +209,6 @@ export default function ProfilePage() {
             : p
         )
       );
-      // Update local post count reference
       setActivePostForComments({
         ...activePostForComments,
         commentsCount: Math.max(0, activePostForComments.commentsCount - 1),
@@ -161,46 +218,39 @@ export default function ProfilePage() {
     }
   };
 
-  const formatTime = (isoString: string) => {
-    try {
-      const date = new Date(isoString);
-      return date.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch (e) {
-      return isoString;
-    }
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   };
 
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-[17px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile...</p>
+        <p className="text-[15px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile...</p>
       </main>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-black text-white flex overflow-hidden">
-      {/* Fixed Left Sidebar */}
       <Sidebar user={user} />
 
-      {/* Main Container */}
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
-        <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
+
+        <div className="z-10 w-full max-w-2xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
           
-          {/* Profile Header Block */}
+          {/* Profile Details Card */}
           <div className="glass-panel rounded-[20px] p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start md:space-x-8 gap-6 border border-white/8 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
             
-            {/* Left Column: Avatar */}
-            <div className="relative w-28 h-28 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg">
+            {/* Avatar */}
+            <div className="relative w-24 h-24 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg">
               {user.profilePicture ? (
                 <Image
                   src={user.profilePicture}
@@ -210,52 +260,77 @@ export default function ProfilePage() {
                   unoptimized
                 />
               ) : (
-                <span className="text-4xl font-light text-neutral-450">
+                <span className="text-3xl font-light text-neutral-450">
                   {user.fullName.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
 
-            {/* Right Column: User Details */}
-            <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-5">
-              
-              {/* Header: Name and Action buttons */}
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <h2 className="text-[24px] md:text-[26px] font-light tracking-wide uppercase text-white leading-tight">{user.fullName}</h2>
-                <Link
-                  href="/dashboard/edit"
-                  className="px-4 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-[11px] font-medium tracking-[0.15em] transition-all duration-200 uppercase rounded-full"
-                >
-                  Edit Profile
-                </Link>
+            {/* Details */}
+            <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-4">
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <h2 className="text-[22px] md:text-[24px] font-light tracking-wide uppercase text-white leading-tight">{user.fullName}</h2>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/dashboard/edit"
+                    className="px-3.5 py-1 bg-white/5 border border-white/10 hover:bg-white/10 text-[10px] font-semibold tracking-wider transition-all uppercase rounded-full"
+                  >
+                    Edit Profile
+                  </Link>
+                  <span className="text-[10px] bg-white/10 text-white font-medium px-2 py-0.5 border border-white/10 rounded-full tracking-wider uppercase">
+                    {user.privacyLevel === "IN_TOUCH_ONLY" || user.privacyLevel === "IN_TOUCH" ? "🔒 In-Touch Only" : user.privacyLevel === "ACADEMIC" ? "🎓 Academic" : "🌍 Public"}
+                  </span>
+                </div>
               </div>
 
-              {/* Counts: Posts, Batch, Department */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-5 text-[13px] text-neutral-450 font-light uppercase tracking-wider">
-                <span><strong className="text-white font-medium">{myPosts.length}</strong> posts</span>
-                <span>Class of {user.batch}</span>
-                <span>{user.department} {user.section ? `Sec ${user.section}` : ""}</span>
+              {/* Statistics Counters */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-5 gap-y-1.5 text-[11px] text-neutral-450 font-light uppercase tracking-wider">
+                <span><strong className="text-white font-medium">{myPosts.length}</strong> Memories</span>
+                <span><strong className="text-white font-medium">{connections.length}</strong> In-Touch</span>
+                <span><strong className="text-white font-medium">{timeline.length}</strong> Milestones</span>
+                <span>Class of {user.batch} • {user.department} {user.section ? `Sec ${user.section}` : ""}</span>
               </div>
 
-              {/* Bio & Professional Info */}
-              <div className="space-y-1.5 text-[14px] font-light text-neutral-355 leading-relaxed max-w-lg">
-                <span className="text-white font-medium block text-[17px]">
-                  {user.currentPosition || "Alumni Member"}
+              {/* Position and City */}
+              <div className="space-y-1 text-[13px] font-light text-neutral-300">
+                <span className="text-white font-medium block">
+                  {user.currentPosition || "Alumni Member"} {user.currentCompany && `at ${user.currentCompany}`}
                 </span>
-                {user.bio && (
-                  <p className="text-neutral-400 whitespace-pre-wrap">{user.bio}</p>
+                {user.currentCity && (
+                  <p className="text-[12px] text-neutral-500 uppercase tracking-widest">📍 {user.currentCity}</p>
+                )}
+                {user.graduationYear && (
+                  <p className="text-[11px] text-neutral-500 uppercase tracking-wider">Graduated in {user.graduationYear}</p>
                 )}
               </div>
 
-              {/* Social Links */}
+              {/* Skills Tags */}
+              {user.skills && (
+                <div className="flex flex-wrap gap-1.5 pt-1 justify-center md:justify-start">
+                  {user.skills.split(",").map((s) => s.trim()).filter(Boolean).map((skill, index) => (
+                    <span
+                      key={index}
+                      className="px-2.5 py-0.5 bg-white/5 border border-white/10 rounded-full text-[10px] text-neutral-350 uppercase tracking-wider font-light"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Bio & Socials */}
+              {user.bio && (
+                <p className="text-neutral-400 text-[13px] font-light leading-relaxed whitespace-pre-wrap max-w-lg">{user.bio}</p>
+              )}
+
               {(user.linkedinUrl || user.githubUrl || user.instagramUrl) && (
-                <div className="flex flex-wrap gap-4 pt-2 text-[13px]">
+                <div className="flex flex-wrap gap-4 pt-1 text-[11px]">
                   {user.linkedinUrl && (
                     <a
                       href={user.linkedinUrl.startsWith("http") ? user.linkedinUrl : `https://${user.linkedinUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest underline"
                     >
                       LinkedIn
                     </a>
@@ -265,7 +340,7 @@ export default function ProfilePage() {
                       href={user.githubUrl.startsWith("http") ? user.githubUrl : `https://${user.githubUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest underline"
                     >
                       GitHub
                     </a>
@@ -275,7 +350,7 @@ export default function ProfilePage() {
                       href={user.instagramUrl.startsWith("http") ? user.instagramUrl : `https://${user.instagramUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest underline"
                     >
                       Instagram
                     </a>
@@ -284,13 +359,123 @@ export default function ProfilePage() {
               )}
 
             </div>
+          </div>
 
+          {/* Timeline Manager Section */}
+          <div className="glass-panel p-6 rounded-[20px] border border-white/8 space-y-6">
+            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <h3 className="text-[13px] tracking-widest uppercase text-neutral-450 font-bold">Memory Timeline</h3>
+              <button
+                onClick={() => setShowAddTimeline(!showAddTimeline)}
+                className="py-1 px-3 bg-white text-black hover:bg-neutral-200 text-[11px] font-semibold tracking-wider uppercase rounded-full cursor-pointer transition-colors"
+              >
+                {showAddTimeline ? "Close Form" : "Add Milestone"}
+              </button>
+            </div>
+
+            {/* Inline Add Timeline Entry Form */}
+            {showAddTimeline && (
+              <form onSubmit={handleAddTimeline} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] tracking-wider uppercase text-neutral-450 block font-bold">Year</label>
+                    <input
+                      type="number"
+                      value={newTimelineYear}
+                      onChange={(e) => setNewTimelineYear(Number(e.target.value))}
+                      className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] tracking-wider uppercase text-neutral-450 block font-bold">Title</label>
+                    <input
+                      type="text"
+                      value={newTimelineTitle}
+                      onChange={(e) => setNewTimelineTitle(e.target.value)}
+                      placeholder="e.g. Joined Microsoft"
+                      className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] tracking-wider uppercase text-neutral-450 block font-bold">Description (Optional)</label>
+                  <textarea
+                    value={newTimelineDesc}
+                    onChange={(e) => setNewTimelineDesc(e.target.value)}
+                    placeholder="Short details about the milestone..."
+                    rows={2}
+                    className="w-full glass-input focus:outline-none text-[13px] p-3 resize-none rounded-xl"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="submit"
+                    disabled={addingTimeline}
+                    className="py-2 px-5 bg-white text-black hover:bg-neutral-200 text-[12px] font-semibold uppercase tracking-wider rounded-full cursor-pointer disabled:opacity-50 transition-colors"
+                  >
+                    {addingTimeline ? "Saving..." : "Save Milestone"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Timeline List */}
+            {timelineLoading ? (
+              <p className="text-[12px] text-neutral-500 animate-pulse uppercase tracking-wider">Loading timeline...</p>
+            ) : timeline.length === 0 ? (
+              <p className="text-[12px] text-neutral-500 font-light italic">No timeline milestones added yet.</p>
+            ) : (
+              <div className="relative pl-6 border-l border-white/10 space-y-6 py-2">
+                {timeline.map((item, idx) => (
+                  <motion.div 
+                    key={item.id || idx}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="relative group"
+                  >
+                    {/* Timeline Node dot */}
+                    <div className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full bg-white ring-4 ring-black" />
+                    
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <div className="text-[11px] font-bold text-neutral-450 tracking-wider uppercase mb-0.5">
+                          {item.year}
+                        </div>
+                        <h4 className="text-[13px] font-medium text-white uppercase tracking-wide">
+                          {item.title}
+                        </h4>
+                        {item.description && (
+                          <p className="text-[12px] text-neutral-450 mt-1 leading-relaxed">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Delete icon */}
+                      {item.id && (
+                        <button
+                          onClick={() => handleDeleteTimelineItem(item.id!)}
+                          className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-red-500 text-[10px] tracking-wider uppercase transition-opacity cursor-pointer border border-white/5 px-2 py-0.5 rounded-full"
+                          title="Delete Milestone"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Posts Grid Header */}
           <div className="flex justify-center border-b border-white/5 pb-4">
-            <span className="text-[15px] font-bold tracking-widest uppercase text-white border-t border-white pt-4 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span className="text-[13px] font-bold tracking-widest uppercase text-white border-t border-white pt-4 flex items-center gap-2">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
               My Memories
@@ -299,12 +484,12 @@ export default function ProfilePage() {
 
           {/* User's own posts grid */}
           {feedLoading ? (
-            <div className="flex items-center justify-center p-16 glass-panel rounded-[24px]">
-              <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Posts...</span>
+            <div className="flex items-center justify-center p-16 glass-panel rounded-[20px] border border-white/8">
+              <span className="text-[13px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Posts...</span>
             </div>
           ) : myPosts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-16 glass-panel text-center rounded-[24px]">
-              <span className="text-[17px] font-light text-neutral-300">No memories shared by you yet.</span>
+            <div className="flex flex-col items-center justify-center p-16 glass-panel text-center rounded-[20px] border border-white/8">
+              <span className="text-[14px] font-light text-neutral-450 uppercase tracking-wider">No memories shared by you yet.</span>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 md:gap-5">
@@ -313,7 +498,7 @@ export default function ProfilePage() {
                   key={post.id}
                   whileHover={{ scale: 1.015 }}
                   onClick={() => handleOpenCommentsModal(post)}
-                  className="aspect-square glass-panel cursor-pointer relative overflow-hidden group rounded-[20px]"
+                  className="aspect-square glass-panel cursor-pointer relative overflow-hidden group rounded-[20px] border border-white/8"
                 >
                   {post.imageUrl ? (
                     <Image
@@ -325,14 +510,14 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center p-6 text-center">
-                      <p className="text-[15px] font-light text-neutral-305 line-clamp-3 leading-relaxed">
+                      <p className="text-[13px] font-light text-neutral-300 line-clamp-3 leading-relaxed">
                         {post.caption}
                       </p>
                     </div>
                   )}
 
                   {/* Hover stats overlay */}
-                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-5 text-[14px]">
+                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-5 text-[12px]">
                     <div className="flex items-center space-x-1.5">
                       <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24">
                         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -377,22 +562,22 @@ export default function ProfilePage() {
               {/* Modal Title & Stats */}
               <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
-                  <h2 className="text-[20px] font-light tracking-[0.15em] uppercase leading-tight">Memory Detail</h2>
-                  <p className="text-[12px] tracking-wider text-neutral-400 mt-1.5 uppercase">
+                  <h2 className="text-[18px] font-light tracking-[0.15em] uppercase leading-tight">Memory Detail</h2>
+                  <p className="text-[11px] tracking-wider text-neutral-450 mt-1 uppercase">
                     Shared {formatTime(activePostForComments.createdAt)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePostForComments(null)}
-                  className="text-neutral-400 hover:text-white text-[13px] uppercase tracking-widest border border-white/10 hover:border-white px-4 py-2 cursor-pointer rounded-xl transition-colors"
+                  className="text-neutral-400 hover:text-white text-[12px] uppercase tracking-widest border border-white/10 hover:border-white px-4 py-2 cursor-pointer rounded-full transition-colors"
                 >
                   Close
                 </button>
               </div>
 
               {/* Post Caption Block */}
-              <div className="glass-panel p-6 rounded-2xl space-y-4">
+              <div className="glass-panel p-5 rounded-2xl space-y-4">
                 {activePostForComments.imageUrl && (
                   <div className="relative w-full aspect-[4/3] bg-neutral-900 rounded-lg overflow-hidden border border-white/5">
                     <Image
@@ -405,36 +590,36 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-[17px] text-neutral-200 font-light leading-relaxed whitespace-pre-wrap">{activePostForComments.caption}</p>
+                  <p className="text-[15px] text-neutral-200 font-light leading-relaxed whitespace-pre-wrap">{activePostForComments.caption}</p>
                   <motion.button
                     whileTap={{ scale: 1.2 }}
                     onClick={() => handleLikeToggle(activePostForComments.id)}
-                    className="text-[28px] focus:outline-none cursor-pointer pl-3"
+                    className="text-[24px] focus:outline-none cursor-pointer pl-3"
                   >
                     {activePostForComments.likedByMe ? "❤️" : "🤍"}
                   </motion.button>
                 </div>
-                <div className="text-[15px] text-neutral-500 uppercase tracking-wider">
+                <div className="text-[12px] text-neutral-500 uppercase tracking-wider">
                   {activePostForComments.likesCount} likes • {activePostForComments.commentsCount} comments
                 </div>
               </div>
 
               {/* Comment List */}
-              <div className="flex-1 overflow-y-auto min-h-[220px] space-y-5 pr-2">
+              <div className="flex-1 overflow-y-auto min-h-[180px] space-y-5 pr-2">
                 {commentsLoading ? (
                   <div className="flex justify-center items-center h-32">
-                    <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Comments...</span>
+                    <span className="text-[13px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Comments...</span>
                   </div>
                 ) : comments.length === 0 ? (
-                  <div className="flex justify-center items-center h-32 text-neutral-500 text-[15px]">
+                  <div className="flex justify-center items-center h-32 text-neutral-500 text-[13px] uppercase tracking-wider">
                     <span>No comments yet.</span>
                   </div>
                 ) : (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {comments.map((comment) => (
                       <div key={comment.id} className="flex items-start justify-between border-b border-white/5 pb-4 gap-4">
-                        <div className="flex items-start space-x-4">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                        <div className="flex items-start space-x-3.5">
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
                             {comment.userProfilePicture ? (
                               <Image
                                 src={comment.userProfilePicture}
@@ -444,29 +629,28 @@ export default function ProfilePage() {
                                 unoptimized
                               />
                             ) : (
-                              <span className="text-[15px] text-neutral-400 font-light">
+                              <span className="text-[13px] text-neutral-450 font-light">
                                 {comment.userFullName.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
                           <div>
                             <div className="flex items-baseline space-x-2">
-                              <span className="text-[15px] font-semibold text-white tracking-wide">{comment.userFullName}</span>
+                              <span className="text-[13px] font-semibold text-white tracking-wide">{comment.userFullName}</span>
                               {comment.userCurrentPosition && (
-                                <span className="text-[13px] text-neutral-400 hidden sm:inline">• {comment.userCurrentPosition}</span>
+                                <span className="text-[11px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
                               )}
                             </div>
-                            <span className="text-[13px] text-neutral-500 block mt-1">{formatTime(comment.createdAt)}</span>
-                            <p className="text-[15px] font-light text-neutral-200 mt-2 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
+                            <span className="text-[10px] text-neutral-550 block mt-1">{formatTime(comment.createdAt)}</span>
+                            <p className="text-[13px] font-light text-neutral-200 mt-1.5 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
                           </div>
                         </div>
 
-                        {/* Delete comment option (owner only) */}
                         {comment.userId === user.id && (
                           <button
                             type="button"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="text-neutral-500 hover:text-red-400 text-[13px] tracking-wider uppercase border border-transparent hover:border-red-955 px-3 py-1.5 flex-shrink-0 cursor-pointer rounded-lg transition-colors"
+                            className="text-neutral-500 hover:text-red-400 text-[11px] tracking-wider uppercase border border-white/5 hover:border-red-955 px-2.5 py-1 flex-shrink-0 cursor-pointer rounded-full transition-colors"
                             title="Delete Comment"
                           >
                             Delete
@@ -479,9 +663,9 @@ export default function ProfilePage() {
               </div>
 
               {/* Comment Form */}
-              <form onSubmit={handleAddComment} className="flex space-x-4 pt-5 border-t border-white/5">
+              <form onSubmit={handleAddComment} className="flex space-x-3 pt-4 border-t border-white/5">
                 {commentSubmitError && (
-                  <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[13px] tracking-wider rounded-lg">
+                  <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[12px] tracking-wider rounded-xl">
                     {commentSubmitError}
                   </div>
                 )}
@@ -490,12 +674,12 @@ export default function ProfilePage() {
                   value={newCommentText}
                   onChange={(e) => setNewCommentText(e.target.value)}
                   placeholder="Write a comment..."
-                  className="flex-1 glass-input focus:outline-none p-3 text-[14px] rounded-full"
+                  className="flex-1 glass-input focus:outline-none px-4 py-2.5 text-[13px] rounded-full"
                 />
                 <button
                   type="submit"
                   disabled={submittingComment}
-                  className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                  className="py-2 px-4 bg-white text-black hover:bg-neutral-200 text-[12px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
                 >
                   Post
                 </button>

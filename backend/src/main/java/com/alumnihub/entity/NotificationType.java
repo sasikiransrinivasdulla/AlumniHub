@@ -4,5 +4,9 @@ public enum NotificationType {
     LIKE,
     COMMENT,
     MESSAGE,
-    MENTION
+    MENTION,
+    IN_TOUCH_REQUEST,
+    IN_TOUCH_ACCEPT,
+    CONTACT_REQUEST,
+    CONTACT_ACCEPT
 }

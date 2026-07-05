@@ -11,6 +11,15 @@ export interface UserProfile {
   section: string | null;
   bio: string | null;
   currentPosition: string | null;
+  currentCompany: string | null;
+  currentCity: string | null;
+  skills: string | null;
+  graduationYear: string | null;
+  privacyLevel: string | null;
+  inTouchStatus: string | null;
+  inTouchConnectedSince: string | null;
+  contactRequestStatus: string | null;
+  hasFullAccess: boolean;
   phoneNumber: string | null;
   linkedinUrl: string | null;
   githubUrl: string | null;

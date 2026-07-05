@@ -28,6 +28,16 @@ public class UserProfileUpdateDto {
     @Size(max = 100, message = "Current position must not exceed 100 characters")
     private String currentPosition;
 
+    private String currentCompany;
+
+    private String currentCity;
+
+    private String skills;
+
+    private String graduationYear;
+
+    private String privacyLevel;
+
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     private String phoneNumber;
 

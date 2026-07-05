@@ -46,6 +46,17 @@ public class User {
 
     private String currentPosition;
 
+    private String currentCompany;
+
+    private String currentCity;
+
+    private String skills;
+
+    private String graduationYear;
+
+    @Builder.Default
+    private String privacyLevel = "PUBLIC";
+
     private String phoneNumber;
 
     private String linkedinUrl;

@@ -28,6 +28,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
+    private final AlumniService alumniService;
 
     @Transactional
     public PostDto createPost(String email, PostCreateDto createDto) {
@@ -65,7 +66,12 @@ public class PostService {
         Set<UUID> likedPostIds = postIds.isEmpty() ? Collections.emptySet() 
                 : likeRepository.findLikedPostIdsByUserAndPostIds(user, postIds);
 
-        return postsPage.map(p -> convertToDtoWithLikes(p, likedPostIds.contains(p.getId())));
+        List<PostDto> content = postsPage.getContent().stream()
+                .filter(p -> alumniService.hasCompleteProfileAccess(user, p.getUser()))
+                .map(p -> convertToDtoWithLikes(p, likedPostIds.contains(p.getId())))
+                .collect(Collectors.toList());
+
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, postsPage.getTotalElements());
     }
 
     public PostDto getPostById(String email, UUID postId) {
@@ -75,22 +81,9 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("Post not found with ID: " + postId));
 
-        // Visibility restriction check
         User creator = post.getUser();
-        String creatorDept = creator.getDepartment();
-        
-        boolean hasAccess = false;
-        if ("CST".equalsIgnoreCase(creatorDept) || "ECT".equalsIgnoreCase(creatorDept)) {
-            hasAccess = creator.getBatch().equalsIgnoreCase(requestingUser.getBatch()) &&
-                        creatorDept.equalsIgnoreCase(requestingUser.getDepartment());
-        } else {
-            hasAccess = creator.getBatch().equalsIgnoreCase(requestingUser.getBatch()) &&
-                        creatorDept.equalsIgnoreCase(requestingUser.getDepartment()) &&
-                        (creator.getSection() != null && creator.getSection().equalsIgnoreCase(requestingUser.getSection()));
-        }
-
-        if (!hasAccess) {
-            throw new AccessDeniedException("You do not belong to the academic community authorized to view this post.");
+        if (!alumniService.hasCompleteProfileAccess(requestingUser, creator)) {
+            throw new AccessDeniedException("You do not have permission to view this post.");
         }
 
         return convertToDto(post, requestingUser);

@@ -6,6 +6,7 @@ import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMemoriesFeed, createPost, Post } from "@/services/postService";
 import { toggleLike, getComments, addComment, deleteComment, CommentDto } from "@/services/likeCommentService";
 import { uploadPostImage } from "@/services/uploadService";
+import { getRecommendations } from "@/services/alumniService";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
@@ -31,6 +32,8 @@ export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<UserProfile[]>([]);
+  const [recLoading, setRecLoading] = useState(true);
 
   // Share Memory Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +88,12 @@ export default function Dashboard() {
             setFeedLoading(false);
           }
         }
+        // Fetch recommendations in background
+        getRecommendations()
+          .then(setRecommendations)
+          .catch(console.error)
+          .finally(() => setRecLoading(false));
+
       } catch (err: any) {
         console.error(err);
         clearAuth();
@@ -417,6 +426,57 @@ export default function Dashboard() {
               Share a Memory
             </motion.button>
           </div>
+
+          {/* People You May Know Row */}
+          {!recLoading && recommendations.length > 0 && (
+            <div className="space-y-3 pb-2 border-b border-white/5">
+              <h3 className="text-[12px] font-semibold text-neutral-450 uppercase tracking-widest">People You May Know</h3>
+              <div className="flex overflow-x-auto gap-4 pb-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                {recommendations.map((rec) => (
+                  <motion.div
+                    whileHover={{ scale: 1.015 }}
+                    key={rec.id}
+                    onClick={() => router.push(`/alumni/${rec.id}`)}
+                    className="w-40 flex-shrink-0 glass-panel p-4 flex flex-col items-center text-center cursor-pointer border border-white/8 rounded-2xl hover:border-white/15 transition-colors relative"
+                  >
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center mb-2">
+                      {rec.profilePicture ? (
+                        <Image
+                          src={rec.profilePicture}
+                          alt={rec.fullName}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <span className="text-[14px] font-light text-neutral-450">
+                          {rec.fullName.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    
+                    <h4 className="text-[12px] font-semibold text-white uppercase tracking-wider truncate w-full mb-0.5">
+                      {rec.fullName}
+                    </h4>
+                    
+                    <p className="text-[10px] text-neutral-455 truncate w-full font-light">
+                      {rec.currentPosition || "Alumni Member"}
+                    </p>
+                    
+                    <p className="text-[9px] text-neutral-500 font-light mt-1.5 uppercase tracking-wider">
+                      Class of {rec.batch}
+                    </p>
+
+                    <button
+                      className="mt-3 px-3 py-1.5 bg-white text-black hover:bg-neutral-200 text-[10px] font-bold uppercase tracking-wider rounded-full w-full text-center"
+                    >
+                      Connect
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Feed List */}
           {feedLoading ? (

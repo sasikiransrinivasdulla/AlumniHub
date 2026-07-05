@@ -48,6 +48,11 @@ export default function ProfileSetup() {
   const [department, setDepartment] = useState("");
   const [section, setSection] = useState("");
   const [currentPosition, setCurrentPosition] = useState("");
+  const [currentCompany, setCurrentCompany] = useState("");
+  const [currentCity, setCurrentCity] = useState("");
+  const [skills, setSkills] = useState("");
+  const [graduationYear, setGraduationYear] = useState("");
+  const [privacyLevel, setPrivacyLevel] = useState("PUBLIC");
   const [bio, setBio] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
@@ -58,7 +63,6 @@ export default function ProfileSetup() {
     async function checkSetup() {
       try {
         const profile = await getUserProfile();
-        // If already completed profile setup, bypass this page
         if (profile.profileCompleted) {
           router.push("/dashboard");
           return;
@@ -66,11 +70,15 @@ export default function ProfileSetup() {
         setEmail(profile.email || "");
         setFullName(profile.fullName || "");
         setProfilePicture(profile.profilePicture || null);
-        // Pre-fill if there are values
         setBatch(profile.batch || "");
         setDepartment(profile.department || "");
         setSection(profile.section || "");
         setCurrentPosition(profile.currentPosition || "");
+        setCurrentCompany(profile.currentCompany || "");
+        setCurrentCity(profile.currentCity || "");
+        setSkills(profile.skills || "");
+        setGraduationYear(profile.graduationYear || "");
+        setPrivacyLevel(profile.privacyLevel || "PUBLIC");
         setBio(profile.bio || "");
         setPhoneNumber(profile.phoneNumber || "");
         setLinkedinUrl(profile.linkedinUrl || "");
@@ -100,7 +108,6 @@ export default function ProfileSetup() {
     e.preventDefault();
     setError(null);
 
-    // Client-side validations
     if (!batch) {
       setError("Please select your Batch.");
       return;
@@ -114,10 +121,6 @@ export default function ProfileSetup() {
       setError("Please select your Section.");
       return;
     }
-    if (currentPosition.length > 100) {
-      setError("Current Position must not exceed 100 characters.");
-      return;
-    }
     if (bio.length > 250) {
       setError("Bio must not exceed 250 characters.");
       return;
@@ -127,15 +130,14 @@ export default function ProfileSetup() {
       return;
     }
 
-    // Branch-based GitHub validation
     const isSoftwareBranch = ["CSE", "CST", "AIML", "CAI"].includes(department);
     if (isSoftwareBranch && !githubUrl.trim()) {
-      setError(`GitHub profile URL is required for software-related branch (${department}).`);
+      setError(`GitHub profile URL is required for software branch (${department}).`);
       return;
     }
 
     if (githubUrl && !/^(https?:\/\/)?(www\.)?github\.com\/[a-zA-Z0-9_-]+\/?$/.test(githubUrl.trim())) {
-      setError("Please enter a valid GitHub profile URL (e.g., https://github.com/username).");
+      setError("Please enter a valid GitHub profile URL.");
       return;
     }
     if (linkedinUrl && !/^(https?:\/\/)?([a-zA-Z0-9-]+\.)?linkedin\.com\/.*$/.test(linkedinUrl.trim())) {
@@ -143,7 +145,7 @@ export default function ProfileSetup() {
       return;
     }
     if (instagramUrl && !/^(https?:\/\/)?(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/.test(instagramUrl.trim())) {
-      setError("Please enter a valid Instagram URL (e.g., https://instagram.com/username).");
+      setError("Please enter a valid Instagram URL.");
       return;
     }
 
@@ -155,13 +157,17 @@ export default function ProfileSetup() {
         department,
         section: section || null,
         currentPosition: currentPosition.trim() || null,
+        currentCompany: currentCompany.trim() || null,
+        currentCity: currentCity.trim() || null,
+        skills: skills.trim() || null,
+        graduationYear: graduationYear.trim() || null,
+        privacyLevel,
         bio: bio.trim() || null,
         phoneNumber: phoneNumber.trim(),
         linkedinUrl: linkedinUrl.trim() || null,
         githubUrl: githubUrl.trim() || null,
         instagramUrl: instagramUrl.trim() || null,
       });
-      // Successful save sets profileCompleted = true in DB. Redirect to Dashboard.
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
@@ -184,19 +190,14 @@ export default function ProfileSetup() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white px-6 py-12 relative overflow-hidden select-none">
-      
-      {/* Radial glow background effect */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_100%)] pointer-events-none" />
 
-      {/* Form Container */}
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="z-10 flex flex-col w-full max-w-xl glass-panel p-6 md:p-10 shadow-2xl space-y-6 rounded-[20px] border border-white/8"
       >
-        
-        {/* Title */}
         <div className="pb-4 border-b border-white/5 text-center sm:text-left">
           <h1 className="text-[22px] md:text-[24px] font-light tracking-[0.15em] uppercase text-white leading-tight">Complete Your Profile</h1>
           <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5">Please provide the remaining graduation details to access the platform.</p>
@@ -208,10 +209,10 @@ export default function ProfileSetup() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Avatar & Read-Only User Metadata */}
+        <form onSubmit={handleSubmit} className="space-y-6 text-[12px]">
+          {/* User Info */}
           <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 pb-6 border-b border-white/5">
-            <div className="relative w-18 h-18 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+            <div className="relative w-16 h-16 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
               {profilePicture ? (
                 <Image
                   src={profilePicture}
@@ -221,24 +222,38 @@ export default function ProfileSetup() {
                   unoptimized
                 />
               ) : (
-                <span className="text-2xl font-light text-neutral-450">
+                <span className="text-xl font-light text-neutral-450">
                   {fullName.charAt(0).toUpperCase()}
                 </span>
               )}
             </div>
             <div className="text-center sm:text-left space-y-1">
-              <span className="text-[15px] font-semibold tracking-wide text-white block leading-none">{fullName}</span>
-              <span className="text-[13px] tracking-wider text-neutral-400 block mt-1 leading-none">{email}</span>
-              <span className="inline-block mt-3 text-[11px] tracking-widest uppercase text-neutral-450 bg-white/5 px-3 py-1 border border-white/10 rounded-lg">
+              <span className="text-[14px] font-semibold text-white block leading-none">{fullName}</span>
+              <span className="text-[12px] tracking-wider text-neutral-400 block mt-1 leading-none">{email}</span>
+              <span className="inline-block mt-3 text-[10px] tracking-widest uppercase text-neutral-450 bg-white/5 px-2.5 py-0.5 border border-white/10 rounded-full">
                 Google Authenticated
               </span>
             </div>
           </div>
 
+          {/* Privacy Level Dropdown */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Profile Privacy Level</label>
+            <select
+              value={privacyLevel}
+              onChange={(e) => setPrivacyLevel(e.target.value)}
+              className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full cursor-pointer"
+            >
+              <option value="PUBLIC" className="bg-neutral-950">🌍 Public (Visible to everyone)</option>
+              <option value="ACADEMIC" className="bg-neutral-950">🎓 Academic Community (Only matching batch/branch)</option>
+              <option value="IN_TOUCH_ONLY" className="bg-neutral-950">🔒 In-Touch Only (Only accepted connections)</option>
+            </select>
+          </div>
+
           {/* Academic Dropdowns */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block">Batch *</label>
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Batch *</label>
               <select
                 value={batch}
                 onChange={(e) => setBatch(e.target.value)}
@@ -247,15 +262,13 @@ export default function ProfileSetup() {
               >
                 <option value="" className="bg-neutral-950">Select Batch</option>
                 {BATCH_OPTIONS.map((range) => (
-                  <option key={range} value={range} className="bg-neutral-950">
-                    {range}
-                  </option>
+                  <option key={range} value={range} className="bg-neutral-950">{range}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block">Department *</label>
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Department *</label>
               <select
                 value={department}
                 onChange={(e) => handleDepartmentChange(e.target.value)}
@@ -264,15 +277,13 @@ export default function ProfileSetup() {
               >
                 <option value="" className="bg-neutral-950">Select Department</option>
                 {DEPARTMENT_OPTIONS.map((dept) => (
-                  <option key={dept} value={dept} className="bg-neutral-950">
-                    {dept}
-                  </option>
+                  <option key={dept} value={dept} className="bg-neutral-950">{dept}</option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block">Section</label>
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Section</label>
               {availableSections.length > 0 ? (
                 <select
                   value={section}
@@ -282,9 +293,7 @@ export default function ProfileSetup() {
                 >
                   <option value="" className="bg-neutral-950">Select Section</option>
                   {availableSections.map((sec) => (
-                    <option key={sec} value={sec} className="bg-neutral-950">
-                      Section {sec}
-                    </option>
+                    <option key={sec} value={sec} className="bg-neutral-950">Section {sec}</option>
                   ))}
                 </select>
               ) : (
@@ -298,15 +307,63 @@ export default function ProfileSetup() {
             </div>
           </div>
 
-          {/* Current Position */}
+          {/* Position & Company */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Current Position (Optional)</label>
+              <input
+                type="text"
+                value={currentPosition}
+                onChange={(e) => setCurrentPosition(e.target.value)}
+                className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                placeholder="e.g. Software Engineer"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Current Company (Optional)</label>
+              <input
+                type="text"
+                value={currentCompany}
+                onChange={(e) => setCurrentCompany(e.target.value)}
+                className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                placeholder="e.g. Google"
+              />
+            </div>
+          </div>
+
+          {/* City & Graduation Year */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Current City (Optional)</label>
+              <input
+                type="text"
+                value={currentCity}
+                onChange={(e) => setCurrentCity(e.target.value)}
+                className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                placeholder="e.g. Bangalore"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Graduation Year (Optional)</label>
+              <input
+                type="text"
+                value={graduationYear}
+                onChange={(e) => setGraduationYear(e.target.value)}
+                className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
+                placeholder="e.g. 2024"
+              />
+            </div>
+          </div>
+
+          {/* Skills */}
           <div className="space-y-1.5">
-            <label className="text-[11px] tracking-wider uppercase text-neutral-400 block">Current Position (Optional)</label>
+            <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Skills (Optional, comma-separated)</label>
             <input
               type="text"
-              value={currentPosition}
-              onChange={(e) => setCurrentPosition(e.target.value)}
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
               className="w-full glass-input focus:outline-none text-[13px] px-3.5 py-2.5 rounded-full"
-              placeholder="e.g. Software Engineer at Google"
+              placeholder="e.g. React, Spring Boot, PostgreSQL"
             />
           </div>
 
@@ -330,7 +387,7 @@ export default function ProfileSetup() {
 
           {/* Phone Number */}
           <div className="space-y-1.5">
-            <label className="text-[11px] tracking-wider uppercase text-neutral-400 block">Phone Number *</label>
+            <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-bold">Phone Number *</label>
             <input
               type="text"
               value={phoneNumber}
@@ -341,7 +398,7 @@ export default function ProfileSetup() {
             />
           </div>
 
-          {/* LinkedIn, GitHub, Instagram Links */}
+          {/* Links */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <label className="text-[11px] tracking-wider uppercase text-neutral-400 block font-medium">LinkedIn URL</label>
