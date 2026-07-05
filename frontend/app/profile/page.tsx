@@ -304,6 +304,46 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* Profile Badges */}
+              {user.badges && (
+                <div className="flex flex-wrap gap-2 pt-1 justify-center md:justify-start">
+                  {user.badges.split(",").map((b) => b.trim()).filter(Boolean).map((badge, idx) => {
+                    let badgeColor = "border-amber-500/30 bg-amber-500/[0.03] text-amber-400";
+                    if (badge.toUpperCase() === "MENTOR") {
+                      badgeColor = "border-emerald-500/30 bg-emerald-500/[0.03] text-emerald-400";
+                    } else if (badge.toUpperCase() === "ENTREPRENEUR") {
+                      badgeColor = "border-indigo-500/30 bg-indigo-500/[0.03] text-indigo-400";
+                    } else if (badge.toUpperCase() === "HIRING") {
+                      badgeColor = "border-sky-500/30 bg-sky-500/[0.03] text-sky-400";
+                    } else if (badge.toUpperCase() === "REUNION ORGANIZER") {
+                      badgeColor = "border-rose-500/30 bg-rose-500/[0.03] text-rose-400";
+                    }
+                    return (
+                      <span
+                        key={idx}
+                        className={`px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border ${badgeColor}`}
+                      >
+                        ⚡ {badge}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Open To preferences */}
+              {user.openTo && (
+                <div className="flex flex-col items-center md:items-start text-[11px] text-neutral-450 space-y-1">
+                  <span className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Open to:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.openTo.split(",").map((o) => o.trim()).filter(Boolean).map((pref, idx) => (
+                      <span key={idx} className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-[10px] text-neutral-300 font-medium">
+                        💼 {pref}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Skills Tags */}
               {user.skills && (
                 <div className="flex flex-wrap gap-1.5 pt-1 justify-center md:justify-start">

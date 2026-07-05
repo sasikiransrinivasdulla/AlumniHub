@@ -32,10 +32,12 @@ public class AlumniController {
             @RequestParam(value = "department", required = false) String department,
             @RequestParam(value = "section", required = false) String section,
             @RequestParam(value = "city", required = false) String city,
-            @RequestParam(value = "skills", required = false) String skills
+            @RequestParam(value = "skills", required = false) String skills,
+            @RequestParam(value = "openTo", required = false) String openTo,
+            @RequestParam(value = "badge", required = false) String badge
     ) {
         List<UserDto> matchedAlumni = alumniService.searchVisibleAlumniWithFilters(
-                principal.getName(), query, company, position, batch, department, section, city, skills
+                principal.getName(), query, company, position, batch, department, section, city, skills, openTo, badge
         );
         return ResponseEntity.ok(matchedAlumni);
     }

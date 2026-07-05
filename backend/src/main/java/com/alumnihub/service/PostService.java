@@ -38,6 +38,8 @@ public class PostService {
         Post post = Post.builder()
                 .user(user)
                 .imageUrl(createDto.getImageUrl())
+                .videoUrl(createDto.getVideoUrl())
+                .mediaType(createDto.getMediaType() != null ? createDto.getMediaType() : "IMAGE")
                 .caption(createDto.getCaption())
                 .likesCount(0)
                 .commentsCount(0)
@@ -89,6 +91,36 @@ public class PostService {
         return convertToDto(post, requestingUser);
     }
 
+    public PostDto getMemoryOfTheDay(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+
+        String dept = user.getDepartment();
+        String batch = user.getBatch();
+        String sec = user.getSection();
+
+        List<Post> posts;
+        if ("CST".equalsIgnoreCase(dept) || "ECT".equalsIgnoreCase(dept)) {
+            posts = postRepository.findAllByBatchAndDeptList(batch, dept);
+        } else {
+            posts = postRepository.findAllByBatchDeptAndSecList(batch, dept, sec);
+        }
+
+        List<Post> visiblePosts = posts.stream()
+                .filter(p -> alumniService.hasCompleteProfileAccess(user, p.getUser()))
+                .collect(Collectors.toList());
+
+        if (visiblePosts.isEmpty()) {
+            return null;
+        }
+
+        int daySeed = java.time.LocalDate.now().hashCode();
+        int index = Math.abs(daySeed) % visiblePosts.size();
+        Post post = visiblePosts.get(index);
+        
+        return convertToDto(post, user);
+    }
+
     private PostDto convertToDto(Post post, User requestingUser) {
         boolean likedByMe = requestingUser != null && likeRepository.existsByUserAndPost(requestingUser, post);
         return convertToDtoWithLikes(post, likedByMe);
@@ -103,6 +135,8 @@ public class PostService {
                 .userProfilePicture(creator.getProfilePictureUrl())
                 .userCurrentPosition(creator.getCurrentPosition())
                 .imageUrl(post.getImageUrl())
+                .videoUrl(post.getVideoUrl())
+                .mediaType(post.getMediaType())
                 .caption(post.getCaption())
                 .likesCount(post.getLikesCount())
                 .commentsCount(post.getCommentsCount())

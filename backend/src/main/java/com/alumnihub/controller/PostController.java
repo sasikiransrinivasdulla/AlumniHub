@@ -37,4 +37,10 @@ public class PostController {
         PostDto postDto = postService.getPostById(principal.getName(), id);
         return ResponseEntity.ok(postDto);
     }
+
+    @GetMapping("/memory-of-the-day")
+    public ResponseEntity<PostDto> getMemoryOfTheDay(Principal principal) {
+        PostDto postDto = postService.getMemoryOfTheDay(principal.getName());
+        return ResponseEntity.ok(postDto);
+    }
 }

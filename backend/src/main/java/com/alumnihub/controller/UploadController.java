@@ -122,6 +122,48 @@ public class UploadController {
         }
     }
 
+    @PostMapping("/post-video")
+    public ResponseEntity<?> uploadPostVideo(Principal principal, @RequestParam("file") MultipartFile file) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication required.");
+        }
+
+        try {
+            validateVideoFile(file);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+
+        try {
+            Map uploadResult = cloudinaryService.uploadFile(file, "alumni-hub/posts");
+            String secureUrl = (String) uploadResult.get("secure_url");
+            return ResponseEntity.ok(Map.of("url", secureUrl));
+        } catch (IOException e) {
+            log.error("Failed to upload post video to Cloudinary", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Post video upload failed.");
+        }
+    }
+
+    private void validateVideoFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Upload file cannot be empty.");
+        }
+
+        // Validate File Size (30 MB maximum)
+        if (file.getSize() > 30 * 1024 * 1024) {
+            throw new IllegalArgumentException("File size exceeds the maximum limit of 30 MB.");
+        }
+
+        // Validate Content Type (MP4, MOV, WEBM)
+        String contentType = file.getContentType();
+        if (contentType == null || 
+                (!contentType.equalsIgnoreCase("video/mp4") && 
+                 !contentType.equalsIgnoreCase("video/quicktime") && 
+                 !contentType.equalsIgnoreCase("video/webm"))) {
+            throw new IllegalArgumentException("Unsupported file format. Only MP4, MOV, and WEBM are allowed.");
+        }
+    }
+
     private void validateImageFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Upload file cannot be empty.");

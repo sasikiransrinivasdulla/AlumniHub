@@ -4,10 +4,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export interface NotificationDto {
   id: string;
-  senderId: string;
+  senderId: string | null;
   senderName: string;
   senderProfilePicture: string | null;
-  type: 'LIKE' | 'COMMENT' | 'MESSAGE' | 'MENTION';
+  type: 'LIKE' | 'COMMENT' | 'MESSAGE' | 'MENTION' | 'IN_TOUCH_REQUEST' | 'IN_TOUCH_ACCEPT' | 'IN_TOUCH_REJECT' | 'CONTACT_REQUEST' | 'CONTACT_ACCEPT' | 'REUNION_INVITATION' | 'EVENT_REMINDER';
   targetId: string;
   text: string;
   isRead: boolean;
@@ -78,4 +78,44 @@ export async function markNotificationAsRead(id: string): Promise<void> {
   if (!response.ok) {
     throw new Error("Failed to mark notification as read.");
   }
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${API_BASE}/api/notifications/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete notification.");
+  }
+}
+
+export async function triggerReunionTest(): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  await fetch(`${API_BASE}/api/notifications/reunion-test`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export async function triggerEventTest(): Promise<void> {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  await fetch(`${API_BASE}/api/notifications/event-test`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 }

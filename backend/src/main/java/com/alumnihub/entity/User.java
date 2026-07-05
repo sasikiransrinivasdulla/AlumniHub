@@ -67,6 +67,9 @@ public class User {
 
     private Boolean profileCompleted = false;
 
+    private String badges;
+
+    private String openTo;
 
     @Column(nullable = false)
     private String role; // e.g. "USER", "ADMIN"

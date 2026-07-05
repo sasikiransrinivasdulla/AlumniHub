@@ -27,6 +27,12 @@ public class Post {
     private String imageUrl;
 
     @Column(columnDefinition = "TEXT")
+    private String videoUrl;
+
+    @Builder.Default
+    private String mediaType = "IMAGE";
+
+    @Column(columnDefinition = "TEXT")
     private String caption;
 
     @Builder.Default

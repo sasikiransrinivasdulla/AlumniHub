@@ -13,6 +13,8 @@ import lombok.NoArgsConstructor;
 public class PostCreateDto {
     
     private String imageUrl;
+    private String videoUrl;
+    private String mediaType;
     
     @NotBlank(message = "Caption must not be blank")
     private String caption;

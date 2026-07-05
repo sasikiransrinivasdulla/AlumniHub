@@ -72,6 +72,8 @@ export interface AlumniFilters {
   section?: string;
   city?: string;
   skills?: string;
+  openTo?: string;
+  badge?: string;
 }
 
 export async function searchAlumniDirectoryWithFilters(filters: AlumniFilters): Promise<UserProfile[]> {

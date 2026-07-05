@@ -5,6 +5,7 @@ import { Client } from "@stomp/stompjs";
 import { getAuthToken, getUserProfile, UserProfile } from "@/services/authService";
 import { getUnreadCount } from "@/services/chatService";
 import { getUnreadNotificationsCount } from "@/services/notificationService";
+import { useRouter } from "next/navigation";
 
 interface SocketContextType {
   stompClient: Client | null;
@@ -27,6 +28,7 @@ const SocketContext = createContext<SocketContextType>({
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const router = useRouter();
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
@@ -44,6 +46,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     }
     loadUser();
+
+    // Ask notification permission only once
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        Notification.requestPermission().catch(console.error);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -78,11 +87,27 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     client.onConnect = () => {
       setConnected(true);
       
-      // Subscribe to user inbox notifications
+      // Subscribe to user inbox notifications (Chat Messages)
       client.subscribe(`/topic/users/${user.id}/inbox`, (message) => {
         getUnreadCount().then(setUnreadCount).catch(console.error);
         try {
           const body = JSON.parse(message.body);
+          
+          // Browser native Push Notification for messages
+          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+            if (!document.hasFocus()) {
+              const notification = new Notification(`New Message from ${body.senderName || "Classmate"}`, {
+                body: body.text || "Shared a photo memory",
+                icon: body.senderProfilePicture || "/AHlogo.png",
+                tag: "chat-msg-" + body.conversationId
+              });
+              notification.onclick = () => {
+                window.focus();
+                router.push(`/messages?conversationId=${body.conversationId}`);
+              };
+            }
+          }
+
           const event = new CustomEvent("inbox-update", { detail: body });
           window.dispatchEvent(event);
         } catch (e) {
@@ -90,11 +115,35 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
       });
 
-      // Subscribe to user alerts (likes, comments, messages, mentions)
+      // Subscribe to user alerts (likes, comments, connections)
       client.subscribe(`/topic/users/${user.id}/notifications`, (message) => {
         getUnreadNotificationsCount().then(setUnreadNotificationsCount).catch(console.error);
         try {
           const body = JSON.parse(message.body);
+
+          // Browser native Push Notification for alerts
+          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+            if (!document.hasFocus()) {
+              const notification = new Notification(body.senderName || "Alumni Hub Alert", {
+                body: body.text || "You have a new notification",
+                icon: body.senderProfilePicture || "/AHlogo.png",
+                tag: "alert-" + body.id
+              });
+              notification.onclick = () => {
+                window.focus();
+                if (body.type === "IN_TOUCH_REQUEST" || body.type === "IN_TOUCH_ACCEPT" || body.type === "IN_TOUCH_REJECT") {
+                  router.push("/profile");
+                } else if (body.type === "CONTACT_REQUEST" || body.type === "CONTACT_ACCEPT") {
+                  router.push("/profile");
+                } else if (body.type === "LIKE" || body.type === "COMMENT") {
+                  router.push("/profile");
+                } else {
+                  router.push("/dashboard");
+                }
+              };
+            }
+          }
+
           const event = new CustomEvent("notification-received", { detail: body });
           window.dispatchEvent(event);
         } catch (e) {

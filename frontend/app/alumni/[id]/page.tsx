@@ -390,6 +390,49 @@ export default function AlumniProfile({ params }: PageProps) {
 
             </div>
 
+            {/* Profile Badges */}
+            {alumni.badges && (
+              <div className="space-y-2 pt-5 border-t border-white/5">
+                <span className="text-neutral-500 block text-[12px] uppercase tracking-wider font-bold">Badges</span>
+                <div className="flex flex-wrap gap-2">
+                  {alumni.badges.split(",").map((b) => b.trim()).filter(Boolean).map((badge, idx) => {
+                    let badgeColor = "border-amber-500/30 bg-amber-500/[0.03] text-amber-400";
+                    if (badge.toUpperCase() === "MENTOR") {
+                      badgeColor = "border-emerald-500/30 bg-emerald-500/[0.03] text-emerald-400";
+                    } else if (badge.toUpperCase() === "ENTREPRENEUR") {
+                      badgeColor = "border-indigo-500/30 bg-indigo-500/[0.03] text-indigo-400";
+                    } else if (badge.toUpperCase() === "HIRING") {
+                      badgeColor = "border-sky-500/30 bg-sky-500/[0.03] text-sky-400";
+                    } else if (badge.toUpperCase() === "REUNION ORGANIZER") {
+                      badgeColor = "border-rose-500/30 bg-rose-500/[0.03] text-rose-400";
+                    }
+                    return (
+                      <span
+                        key={idx}
+                        className={`px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border ${badgeColor}`}
+                      >
+                        ⚡ {badge}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Open To Preferences */}
+            {alumni.openTo && (
+              <div className="space-y-2 pt-5 border-t border-white/5">
+                <span className="text-neutral-500 block text-[12px] uppercase tracking-wider font-bold">Open to</span>
+                <div className="flex flex-wrap gap-2">
+                  {alumni.openTo.split(",").map((o) => o.trim()).filter(Boolean).map((pref, idx) => (
+                    <span key={idx} className="bg-white/5 border border-white/10 px-3 py-1 rounded-md text-[11px] text-neutral-300 font-medium">
+                      💼 {pref}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Skills Tag Row */}
             {alumni.skills && (
               <div className="space-y-2 pt-5 border-t border-white/5">

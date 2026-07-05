@@ -18,6 +18,8 @@ public class PostDto {
     private String userProfilePicture;
     private String userCurrentPosition;
     private String imageUrl;
+    private String videoUrl;
+    private String mediaType;
     private String caption;
     private int likesCount;
     private int commentsCount;

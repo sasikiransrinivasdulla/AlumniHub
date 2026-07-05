@@ -47,6 +47,13 @@ public class UserService {
         user.setSection(updateDto.getSection());
         user.setBio(updateDto.getBio());
         user.setCurrentPosition(updateDto.getCurrentPosition());
+        user.setCurrentCompany(updateDto.getCurrentCompany());
+        user.setCurrentCity(updateDto.getCurrentCity());
+        user.setSkills(updateDto.getSkills());
+        user.setGraduationYear(updateDto.getGraduationYear());
+        user.setPrivacyLevel(updateDto.getPrivacyLevel() != null ? updateDto.getPrivacyLevel() : "PUBLIC");
+        user.setBadges(updateDto.getBadges());
+        user.setOpenTo(updateDto.getOpenTo());
         user.setPhoneNumber(updateDto.getPhoneNumber());
         user.setLinkedinUrl(updateDto.getLinkedinUrl());
         user.setGithubUrl(updateDto.getGithubUrl());
@@ -69,6 +76,13 @@ public class UserService {
                 .section(user.getSection())
                 .bio(user.getBio())
                 .currentPosition(user.getCurrentPosition())
+                .currentCompany(user.getCurrentCompany())
+                .currentCity(user.getCurrentCity())
+                .skills(user.getSkills())
+                .graduationYear(user.getGraduationYear())
+                .privacyLevel(user.getPrivacyLevel())
+                .badges(user.getBadges())
+                .openTo(user.getOpenTo())
                 .phoneNumber(user.getPhoneNumber())
                 .linkedinUrl(user.getLinkedinUrl())
                 .githubUrl(user.getGithubUrl())

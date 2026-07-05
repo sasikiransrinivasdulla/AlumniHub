@@ -50,4 +50,7 @@ public class UserProfileUpdateDto {
     @Pattern(regexp = "^$|^(https?://)?(www\\.)?instagram\\.com/[a-zA-Z0-9_.]+/?$", message = "Must be a valid Instagram URL")
     private String instagramUrl;
 
+    private String badges;
+
+    private String openTo;
 }

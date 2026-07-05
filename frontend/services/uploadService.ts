@@ -124,3 +124,49 @@ export function uploadPostImage(
     xhr.send(formData);
   });
 }
+
+export function uploadPostVideo(
+  file: File,
+  onProgress?: UploadProgressCallback
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const token = getAuthToken();
+    if (!token) {
+      return reject(new Error("No authentication token found."));
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/api/upload/post-video`);
+    xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+    if (onProgress) {
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      });
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const res = JSON.parse(xhr.responseText);
+          resolve(res.url);
+        } catch (e) {
+          reject(new Error("Invalid response format."));
+        }
+      } else {
+        reject(new Error(xhr.responseText || `Upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Network error during file upload."));
+    };
+
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
+  });
+}

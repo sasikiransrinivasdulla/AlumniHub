@@ -122,6 +122,14 @@ public class InTouchService {
 
         conn.setStatus("REJECTED");
         inTouchConnectionRepository.save(conn);
+
+        notificationService.createNotification(
+                conn.getUser(),
+                receiver,
+                NotificationType.IN_TOUCH_REJECT,
+                receiver.getId(),
+                receiver.getFullName() + " declined your In-Touch connection request."
+        );
     }
 
     public void removeConnection(String userEmail, UUID targetUserId) {

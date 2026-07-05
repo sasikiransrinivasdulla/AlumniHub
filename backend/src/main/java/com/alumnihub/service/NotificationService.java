@@ -29,7 +29,7 @@ public class NotificationService {
     @Transactional
     @CacheEvict(value = "unreadNotificationsCount", key = "#recipient.id")
     public void createNotification(User recipient, User sender, NotificationType type, UUID targetId, String text) {
-        if (recipient.getId().equals(sender.getId())) {
+        if (sender != null && recipient.getId().equals(sender.getId())) {
             return;
         }
 
@@ -95,12 +95,28 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Transactional
+    @CacheEvict(value = "unreadNotificationsCount", allEntries = true)
+    public void deleteNotification(String email, UUID notificationId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found: " + notificationId));
+
+        if (!notification.getRecipient().getId().equals(user.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized access to notification.");
+        }
+
+        notificationRepository.delete(notification);
+    }
+
     private NotificationDto convertToDto(Notification n) {
         return NotificationDto.builder()
                 .id(n.getId())
-                .senderId(n.getSender().getId())
-                .senderName(n.getSender().getFullName())
-                .senderProfilePicture(n.getSender().getProfilePictureUrl())
+                .senderId(n.getSender() != null ? n.getSender().getId() : null)
+                .senderName(n.getSender() != null ? n.getSender().getFullName() : "Alumni Hub")
+                .senderProfilePicture(n.getSender() != null ? n.getSender().getProfilePictureUrl() : null)
                 .type(n.getType())
                 .targetId(n.getTargetId())
                 .text(n.getText())

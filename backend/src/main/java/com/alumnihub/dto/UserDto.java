@@ -37,6 +37,9 @@ public class UserDto {
     private String instagramUrl;
     private Boolean profileCompleted;
     private String role;
+    private String badges;
+    private String openTo;
+    private String recommendationReason;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

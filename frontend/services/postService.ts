@@ -9,6 +9,8 @@ export interface Post {
   userProfilePicture: string | null;
   userCurrentPosition: string | null;
   imageUrl: string | null;
+  videoUrl: string | null;
+  mediaType: string; // "IMAGE" | "VIDEO"
   caption: string;
   likesCount: number;
   commentsCount: number;
@@ -19,6 +21,8 @@ export interface Post {
 
 export interface PostCreateData {
   imageUrl?: string | null;
+  videoUrl?: string | null;
+  mediaType?: string;
   caption: string;
 }
 
@@ -59,5 +63,25 @@ export async function getMemoriesFeed(): Promise<Post[]> {
     throw new Error(errorMsg || "Failed to load feed.");
   }
 
+  return response.json();
+}
+
+export async function getMemoryOfTheDay(): Promise<Post | null> {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${API_BASE}/api/posts/memory-of-the-day`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+  if (!response.ok) {
+    return null;
+  }
   return response.json();
 }

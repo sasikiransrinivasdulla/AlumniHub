@@ -11,6 +11,9 @@ import {
   getNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  deleteNotification,
+  triggerReunionTest,
+  triggerEventTest,
   NotificationDto,
 } from "@/services/notificationService";
 
@@ -34,20 +37,23 @@ export default function Sidebar({ user }: SidebarProps) {
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
+  const loadNotificationsData = async () => {
+    setNotificationsLoading(true);
+    try {
+      const res = await getNotifications();
+      setNotifications(res && Array.isArray(res.content) ? res.content : []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeDrawer === "notifications") {
-      setNotificationsLoading(true);
-      getNotifications()
-        .then((res) => {
-          setNotifications(res && Array.isArray(res.content) ? res.content : []);
-          markAllNotificationsAsRead()
-            .then(() => setUnreadNotificationsCount(0))
-            .catch(console.error);
-        })
-        .catch(console.error)
-        .finally(() => setNotificationsLoading(false));
+      loadNotificationsData();
     }
-  }, [activeDrawer, setUnreadNotificationsCount]);
+  }, [activeDrawer]);
 
   useEffect(() => {
     const handleNotificationReceived = (e: Event) => {
@@ -58,7 +64,6 @@ export default function Sidebar({ user }: SidebarProps) {
           const currentNotifications = Array.isArray(prev) ? prev : [];
           return [newNotif, ...currentNotifications];
         });
-        markNotificationAsRead(newNotif.id).catch(console.error);
       }
     };
     window.addEventListener("notification-received", handleNotificationReceived);
@@ -102,6 +107,165 @@ export default function Sidebar({ user }: SidebarProps) {
   const handleLogout = () => {
     clearAuth();
     router.push("/");
+  };
+
+  // Group notifications into Today, Yesterday, Earlier
+  const getGroupedNotifications = () => {
+    const today: NotificationDto[] = [];
+    const yesterday: NotificationDto[] = [];
+    const earlier: NotificationDto[] = [];
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    notifications.forEach((notif) => {
+      const date = new Date(notif.createdAt);
+      if (date >= todayStart) {
+        today.push(notif);
+      } else if (date >= yesterdayStart) {
+        yesterday.push(notif);
+      } else {
+        earlier.push(notif);
+      }
+    });
+
+    return { today, yesterday, earlier };
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadNotificationsCount(0);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await markNotificationAsRead(id);
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+      setUnreadNotificationsCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteNotification = async (id: string, isRead: boolean, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      if (!isRead) {
+        setUnreadNotificationsCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleNotificationClick = async (notif: NotificationDto) => {
+    if (!notif.isRead) {
+      await handleMarkRead(notif.id);
+    }
+    setActiveDrawer(null);
+    if (notif.type === "IN_TOUCH_REQUEST" || notif.type === "IN_TOUCH_ACCEPT" || notif.type === "IN_TOUCH_REJECT") {
+      router.push("/profile");
+    } else if (notif.type === "CONTACT_REQUEST" || notif.type === "CONTACT_ACCEPT") {
+      router.push("/profile");
+    } else if (notif.type === "LIKE" || notif.type === "COMMENT") {
+      router.push("/profile");
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  const handleTriggerReunion = async () => {
+    try {
+      await triggerReunionTest();
+      await loadNotificationsData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTriggerEvent = async () => {
+    try {
+      await triggerEventTest();
+      await loadNotificationsData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const grouped = getGroupedNotifications();
+
+  const renderNotificationSection = (title: string, list: NotificationDto[]) => {
+    if (list.length === 0) return null;
+    return (
+      <div className="space-y-2 pt-2">
+        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">{title}</h4>
+        <div className="space-y-2">
+          {list.map((notif) => (
+            <div
+              key={notif.id}
+              onClick={() => handleNotificationClick(notif)}
+              className={`flex items-start gap-3 p-3.5 rounded-[16px] border transition-all cursor-pointer relative group ${
+                notif.isRead 
+                  ? "bg-white/[0.01] border-white/5 hover:border-white/10" 
+                  : "bg-white/[0.04] border-white/10 hover:border-white/15"
+              }`}
+            >
+              {/* Unread dot */}
+              {!notif.isRead && (
+                <div className="absolute top-4.5 right-4 w-2 h-2 rounded-full bg-white animate-pulse" />
+              )}
+
+              {/* Avatar fallback for system messages */}
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                {notif.senderProfilePicture ? (
+                  <Image
+                    src={notif.senderProfilePicture}
+                    alt={notif.senderName}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-[11px] font-bold text-white uppercase">
+                    {notif.senderName ? notif.senderName.charAt(0) : "A"}
+                  </span>
+                )}
+              </div>
+
+              {/* Message block */}
+              <div className="flex-1 min-w-0 pr-6">
+                <p className="text-[13px] text-neutral-200 leading-normal">
+                  <span className="font-semibold text-white">{notif.senderName || "Alumni Hub"}</span>{" "}
+                  {notif.text}
+                </p>
+                <span className="text-[10px] text-neutral-500 mt-1 block tracking-wider uppercase font-light">
+                  {new Date(notif.createdAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+
+              {/* Action: Delete cross button */}
+              <button
+                type="button"
+                onClick={(e) => handleDeleteNotification(notif.id, notif.isRead, e)}
+                className="opacity-0 group-hover:opacity-100 text-neutral-500 hover:text-red-400 text-[14px] cursor-pointer transition-opacity pr-1 self-center"
+                title="Delete Alert"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const navItems = [
@@ -151,6 +315,15 @@ export default function Sidebar({ user }: SidebarProps) {
       ),
     },
     {
+      label: "Share",
+      href: "/share",
+      icon: (
+        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8.684 10.742l5.068-2.534M8.684 13.258l5.068 2.534m-5.068-2.534a3 3 0 11-6 0 3 3 0 016 0zm7.894-5.263a3 3 0 11-6 0 3 3 0 016 0zm0 10.526a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+    },
+    {
       label: "Profile",
       href: "/profile",
       isProfile: true,
@@ -159,10 +332,8 @@ export default function Sidebar({ user }: SidebarProps) {
 
   return (
     <>
-      {/* Sidebar container */}
       <aside className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel flex flex-col justify-between py-10 px-5 z-40 select-none border-y-0 border-l-0">
         <div className="flex flex-col space-y-12">
-          {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-4 px-2">
             <div className="relative w-10 h-10 flex-shrink-0">
               <Image
@@ -178,7 +349,6 @@ export default function Sidebar({ user }: SidebarProps) {
             </span>
           </Link>
 
-          {/* Navigation Items */}
           <nav className="flex flex-col space-y-3">
             {navItems.map((item, idx) => {
               const isActive = item.href ? pathname === item.href : false;
@@ -192,7 +362,6 @@ export default function Sidebar({ user }: SidebarProps) {
                       : "hover:bg-white/[0.04] border border-transparent text-neutral-400 hover:text-white"
                   }`}
                 >
-                  {/* Left Active Indicator */}
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
@@ -275,7 +444,6 @@ export default function Sidebar({ user }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="w-full text-left focus:outline-none cursor-pointer flex items-center gap-5 py-4 px-4 rounded-2xl hover:bg-white/5 transition-colors duration-200 text-neutral-400 hover:text-white"
@@ -289,11 +457,9 @@ export default function Sidebar({ user }: SidebarProps) {
         </button>
       </aside>
 
-      {/* Slide-out drawer */}
       <AnimatePresence>
         {activeDrawer && (
           <>
-            {/* Backdrop to close drawer */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -302,90 +468,100 @@ export default function Sidebar({ user }: SidebarProps) {
               onClick={() => setActiveDrawer(null)}
               className="fixed inset-0 bg-black/75 backdrop-blur-[26px] z-30 ml-20 md:ml-72"
             />
-            {/* Drawer body */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed left-20 md:left-72 top-0 bottom-0 w-96 glass-panel z-35 flex flex-col justify-start px-6 py-10 select-none border-y-0 border-l-0 text-left"
+              className="fixed left-20 md:left-72 top-0 bottom-0 w-[420px] max-w-[calc(100vw-80px)] bg-neutral-950/90 backdrop-blur-[26px] z-35 flex flex-col justify-start px-6 py-10 select-none border-y-0 border-r border-white/5 text-left overflow-y-auto"
             >
               {activeDrawer === "notifications" ? (
-                <div className="flex flex-col h-full w-full">
-                  <h3 className="text-[18px] font-light tracking-[0.2em] uppercase text-white mb-6 border-b border-white/5 pb-4">
-                    Notifications
-                  </h3>
+                <div className="flex flex-col h-full w-full space-y-6">
                   
-                  <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                  {/* Header Row */}
+                  <div className="flex justify-between items-start border-b border-white/5 pb-4">
+                    <div>
+                      <h3 className="text-[16px] font-semibold tracking-widest uppercase text-white leading-none">
+                        Inbox Alerts
+                      </h3>
+                      <p className="text-[11px] text-neutral-450 tracking-wider uppercase mt-1.5 leading-none">
+                        Notification Center
+                      </p>
+                    </div>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={handleMarkAllRead}
+                        className="text-[11px] underline text-neutral-450 hover:text-white uppercase tracking-wider font-semibold cursor-pointer"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notification List (Today, Yesterday, Earlier) */}
+                  <div className="flex-1 overflow-y-auto space-y-5 pr-1">
                     {notificationsLoading ? (
-                      <div className="text-center text-[15px] text-neutral-500 uppercase tracking-widest py-10 animate-pulse">
-                        Loading...
+                      <div className="text-center text-[12px] text-neutral-500 uppercase tracking-widest py-12 animate-pulse font-semibold">
+                        Loading notifications...
                       </div>
                     ) : notifications.length === 0 ? (
-                      <div className="text-center text-[15px] text-neutral-500 uppercase tracking-widest py-10">
-                        No notifications
+                      <div className="text-center text-[12px] text-neutral-500 uppercase tracking-widest py-12 font-light">
+                        No alerts yet
                       </div>
                     ) : (
-                      Array.isArray(notifications) && notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          className="flex items-start gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors"
-                        >
-                          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
-                            {notif.senderProfilePicture ? (
-                              <Image
-                                src={notif.senderProfilePicture}
-                                alt={notif.senderName}
-                                fill
-                                className="object-cover"
-                                unoptimized
-                              />
-                            ) : (
-                              <span className="text-[12px] font-bold text-white uppercase">
-                                {notif.senderName.charAt(0)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[14px] text-neutral-200 leading-tight">
-                              <span className="font-semibold text-white">{notif.senderName}</span>{" "}
-                              {notif.text}
-                            </p>
-                            <span className="text-[11px] text-neutral-500 mt-1 block">
-                              {new Date(notif.createdAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                      <div className="space-y-6">
+                        {renderNotificationSection("Today", grouped.today)}
+                        {renderNotificationSection("Yesterday", grouped.yesterday)}
+                        {renderNotificationSection("Earlier", grouped.earlier)}
+                      </div>
                     )}
+                  </div>
+
+                  {/* Mock triggers for testing & demonstration */}
+                  <div className="border-t border-white/5 pt-4 space-y-2">
+                    <span className="text-[10px] font-bold text-neutral-550 uppercase tracking-widest block">Simulate Notifications</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleTriggerReunion}
+                        className="flex-1 py-2 border border-white/10 hover:bg-white/5 text-[10px] font-semibold tracking-wider uppercase text-neutral-300 hover:text-white rounded-full cursor-pointer transition-colors"
+                      >
+                        + Reunion Invitation
+                      </button>
+                      <button
+                        onClick={handleTriggerEvent}
+                        className="flex-1 py-2 border border-white/10 hover:bg-white/5 text-[10px] font-semibold tracking-wider uppercase text-neutral-300 hover:text-white rounded-full cursor-pointer transition-colors"
+                      >
+                        + Event Reminder
+                      </button>
+                    </div>
                   </div>
                   
                   <button
                     onClick={() => setActiveDrawer(null)}
-                    className="mt-6 text-[13px] font-semibold tracking-widest uppercase border border-white/10 hover:border-white px-6 py-3 transition-colors duration-200 rounded-xl cursor-pointer text-center"
+                    className="w-full text-[12px] font-bold tracking-widest uppercase border border-white/10 hover:border-white py-3 transition-colors duration-200 rounded-full cursor-pointer text-center"
                   >
-                    Close
+                    Close Drawer
                   </button>
                 </div>
               ) : (
                 <div className="flex flex-col h-full w-full">
-                  <h3 className="text-[22px] font-light tracking-widest uppercase text-white mb-4">
-                    Search
+                  <h3 className="text-[18px] font-light tracking-[0.2em] uppercase text-white mb-4">
+                    Search Classmates
                   </h3>
                   <input
                     type="text"
                     placeholder="Search classmates..."
                     value={searchVal}
                     onChange={handleSearchDrawerChange}
-                    className="w-full glass-input text-[15px] p-3.5 rounded-xl mb-6 focus:outline-none"
+                    className="w-full glass-input text-[14px] px-4 py-3 rounded-full mb-6 focus:outline-none"
                   />
                   <div className="flex-1 overflow-y-auto space-y-3 pr-1">
                     {searchLoading ? (
-                      <div className="text-center text-[15px] text-neutral-500 uppercase tracking-widest py-10 animate-pulse">
+                      <div className="text-center text-[12px] text-neutral-500 uppercase tracking-widest py-10 animate-pulse font-semibold">
                         Searching...
                       </div>
                     ) : searchResults.length === 0 ? (
-                      <div className="text-center text-[15px] text-neutral-500 uppercase tracking-widest py-10">
+                      <div className="text-center text-[12px] text-neutral-500 uppercase tracking-widest py-10 font-light">
                         {searchVal ? "No results found" : "Type to search"}
                       </div>
                     ) : (
@@ -396,7 +572,7 @@ export default function Sidebar({ user }: SidebarProps) {
                             setActiveDrawer(null);
                             router.push(`/alumni/${res.id}`);
                           }}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-pointer"
+                          className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors cursor-pointer"
                         >
                           <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
                             {res.profilePicture ? (
@@ -414,10 +590,10 @@ export default function Sidebar({ user }: SidebarProps) {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-[14px] font-semibold text-white truncate leading-none mb-1">
+                            <h4 className="text-[13px] font-semibold text-white truncate leading-none mb-1">
                               {res.fullName}
                             </h4>
-                            <p className="text-[12px] text-neutral-450 truncate leading-none">
+                            <p className="text-[11px] text-neutral-450 truncate leading-none font-light">
                               {res.currentPosition || "Alumni Member"}
                             </p>
                           </div>
@@ -427,7 +603,7 @@ export default function Sidebar({ user }: SidebarProps) {
                   </div>
                   <button
                     onClick={() => setActiveDrawer(null)}
-                    className="mt-6 text-[13px] font-semibold tracking-widest uppercase border border-white/10 hover:border-white px-6 py-3 transition-colors duration-200 rounded-xl cursor-pointer text-center"
+                    className="mt-6 text-[12px] font-bold tracking-widest uppercase border border-white/10 hover:border-white py-3 transition-colors duration-200 rounded-full cursor-pointer text-center"
                   >
                     Close
                   </button>

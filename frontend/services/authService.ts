@@ -16,6 +16,9 @@ export interface UserProfile {
   skills: string | null;
   graduationYear: string | null;
   privacyLevel: string | null;
+  badges: string | null;
+  openTo: string | null;
+  recommendationReason?: string;
   inTouchStatus: string | null;
   inTouchConnectedSince: string | null;
   contactRequestStatus: string | null;

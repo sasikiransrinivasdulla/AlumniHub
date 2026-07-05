@@ -31,11 +31,11 @@ public class AlumniService {
     private EntityManager entityManager;
 
     public List<UserDto> getVisibleAlumni(String requesterEmail) {
-        return searchVisibleAlumniWithFilters(requesterEmail, null, null, null, null, null, null, null, null);
+        return searchVisibleAlumniWithFilters(requesterEmail, null, null, null, null, null, null, null, null, null, null);
     }
 
     public List<UserDto> searchVisibleAlumni(String requesterEmail, String query) {
-        return searchVisibleAlumniWithFilters(requesterEmail, query, null, null, null, null, null, null, null);
+        return searchVisibleAlumniWithFilters(requesterEmail, query, null, null, null, null, null, null, null, null, null);
     }
 
     public List<UserDto> searchVisibleAlumniWithFilters(
@@ -47,7 +47,9 @@ public class AlumniService {
             String department,
             String section,
             String city,
-            String skills
+            String skills,
+            String openTo,
+            String badge
     ) {
         User requester = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + requesterEmail));
@@ -121,6 +123,12 @@ public class AlumniService {
                     filterPredicates.add(cb.like(cb.lower(userRoot.get("skills")), "%" + s.trim().toLowerCase() + "%"));
                 }
             }
+        }
+        if (openTo != null && !openTo.trim().isEmpty()) {
+            filterPredicates.add(cb.like(cb.lower(userRoot.get("openTo")), "%" + openTo.trim().toLowerCase() + "%"));
+        }
+        if (badge != null && !badge.trim().isEmpty()) {
+            filterPredicates.add(cb.like(cb.lower(userRoot.get("badges")), "%" + badge.trim().toLowerCase() + "%"));
         }
 
         cq.where(filterPredicates.toArray(new Predicate[0]));
@@ -242,6 +250,8 @@ public class AlumniService {
                 .skills(target.getSkills())
                 .graduationYear(target.getGraduationYear())
                 .privacyLevel(target.getPrivacyLevel())
+                .badges(target.getBadges())
+                .openTo(target.getOpenTo())
                 .inTouchStatus(inTouchStatus)
                 .inTouchConnectedSince(connectedSince)
                 .contactRequestStatus(contactStatus)
@@ -322,6 +332,24 @@ public class AlumniService {
             }
 
             int score = 0;
+            boolean hasMutualSkill = false;
+            if (requester.getSkills() != null && target.getSkills() != null) {
+                String[] mySkills = requester.getSkills().split(",");
+                String[] targetSkills = target.getSkills().split(",");
+                for (String ms : mySkills) {
+                    for (String ts : targetSkills) {
+                        if (!ms.trim().isEmpty() && ms.trim().equalsIgnoreCase(ts.trim())) {
+                            hasMutualSkill = true;
+                            break;
+                        }
+                    }
+                    if (hasMutualSkill) break;
+                }
+                if (hasMutualSkill) {
+                    score += 2;
+                }
+            }
+
             if (requester.getBatch() != null && requester.getBatch().equalsIgnoreCase(target.getBatch())) {
                 score += 1;
             }
@@ -353,7 +381,48 @@ public class AlumniService {
 
         return scoredList.stream()
                 .limit(12)
-                .map(rs -> convertToDtoWithContext(requester, rs.user))
+                .map(rs -> {
+                    UserDto dto = convertToDtoWithContext(requester, rs.user);
+                    
+                    String reason = "Recommended Classmate";
+                    Set<UUID> targetConnections = userConnectionMap.getOrDefault(rs.user.getId(), Collections.emptySet());
+                    long mutualCount = targetConnections.stream()
+                            .filter(requesterConnectionIds::contains)
+                            .count();
+                    
+                    boolean hasMutualSkill = false;
+                    if (requester.getSkills() != null && rs.user.getSkills() != null) {
+                        String[] mySkills = requester.getSkills().split(",");
+                        String[] targetSkills = rs.user.getSkills().split(",");
+                        for (String ms : mySkills) {
+                            for (String ts : targetSkills) {
+                                if (!ms.trim().isEmpty() && ms.trim().equalsIgnoreCase(ts.trim())) {
+                                    hasMutualSkill = true;
+                                    break;
+                                }
+                            }
+                            if (hasMutualSkill) break;
+                        }
+                    }
+
+                    if (mutualCount > 0) {
+                        reason = mutualCount + " mutual connections";
+                    } else if (requester.getCurrentCompany() != null && rs.user.getCurrentCompany() != null
+                            && requester.getCurrentCompany().equalsIgnoreCase(rs.user.getCurrentCompany())) {
+                        reason = "Works at " + rs.user.getCurrentCompany();
+                    } else if (requester.getCurrentCity() != null && rs.user.getCurrentCity() != null
+                            && requester.getCurrentCity().equalsIgnoreCase(rs.user.getCurrentCity())) {
+                        reason = "Lives in " + rs.user.getCurrentCity();
+                    } else if (hasMutualSkill) {
+                        reason = "Similar skills";
+                    } else if (requester.getBatch() != null && requester.getBatch().equalsIgnoreCase(rs.user.getBatch())) {
+                        reason = "Class of " + rs.user.getBatch();
+                    } else if (requester.getDepartment() != null && requester.getDepartment().equalsIgnoreCase(rs.user.getDepartment())) {
+                        reason = "Same branch: " + rs.user.getDepartment();
+                    }
+                    dto.setRecommendationReason(reason);
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 }

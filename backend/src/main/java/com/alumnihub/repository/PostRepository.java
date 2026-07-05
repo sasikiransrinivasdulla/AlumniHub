@@ -34,4 +34,10 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
             @Param("department") String department, 
             @Param("section") String section, 
             org.springframework.data.domain.Pageable pageable);
+
+    @Query("select p from Post p join fetch p.user u where u.batch = :batch and u.department = :department")
+    List<Post> findAllByBatchAndDeptList(@Param("batch") String batch, @Param("department") String department);
+
+    @Query("select p from Post p join fetch p.user u where u.batch = :batch and u.department = :department and u.section = :section")
+    List<Post> findAllByBatchDeptAndSecList(@Param("batch") String batch, @Param("department") String department, @Param("section") String section);
 }

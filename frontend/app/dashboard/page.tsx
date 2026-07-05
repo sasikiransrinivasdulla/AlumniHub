@@ -3,15 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
-import { getMemoriesFeed, createPost, Post } from "@/services/postService";
+import { getMemoriesFeed, createPost, getMemoryOfTheDay, Post } from "@/services/postService";
 import { toggleLike, getComments, addComment, deleteComment, CommentDto } from "@/services/likeCommentService";
-import { uploadPostImage } from "@/services/uploadService";
+import { uploadPostImage, uploadPostVideo } from "@/services/uploadService";
 import { getRecommendations } from "@/services/alumniService";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { requestCache } from "@/services/cacheService";
 
 const processPostsResponse = (res: any): Post[] => {
@@ -32,13 +31,18 @@ export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
+
+  // Recommendations & Memory of the Day
   const [recommendations, setRecommendations] = useState<UserProfile[]>([]);
   const [recLoading, setRecLoading] = useState(true);
+  const [motd, setMotd] = useState<Post | null>(null);
+  const [motdLoading, setMotdLoading] = useState(true);
 
   // Share Memory Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mediaType, setMediaType] = useState<"IMAGE" | "VIDEO">("IMAGE");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
@@ -63,6 +67,18 @@ export default function Dashboard() {
         }
         setUser(profile);
         
+        // Fetch recommendations in background
+        getRecommendations()
+          .then(setRecommendations)
+          .catch(console.error)
+          .finally(() => setRecLoading(false));
+
+        // Fetch Memory of the Day
+        getMemoryOfTheDay()
+          .then(setMotd)
+          .catch(console.error)
+          .finally(() => setMotdLoading(false));
+
         // Fetch memories feed from cache first
         const cachedFeed = requestCache.get("feed_posts");
         if (cachedFeed) {
@@ -73,7 +89,7 @@ export default function Dashboard() {
             .then((res) => {
               const memories = processPostsResponse(res);
               setPosts(memories);
-              requestCache.set("feed_posts", memories, 20000); // cache for 20s
+              requestCache.set("feed_posts", memories, 20000);
             })
             .catch(console.error);
         } else {
@@ -88,12 +104,6 @@ export default function Dashboard() {
             setFeedLoading(false);
           }
         }
-        // Fetch recommendations in background
-        getRecommendations()
-          .then(setRecommendations)
-          .catch(console.error)
-          .finally(() => setRecLoading(false));
-
       } catch (err: any) {
         console.error(err);
         clearAuth();
@@ -118,16 +128,22 @@ export default function Dashboard() {
     let uploadedUrl: string | null = null;
 
     try {
-      if (selectedImageFile) {
+      if (selectedFile) {
         setUploading(true);
         setUploadProgress(0);
         try {
-          uploadedUrl = await uploadPostImage(selectedImageFile, (percent) => {
-            setUploadProgress(percent);
-          });
+          if (mediaType === "IMAGE") {
+            uploadedUrl = await uploadPostImage(selectedFile, (percent) => {
+              setUploadProgress(percent);
+            });
+          } else {
+            uploadedUrl = await uploadPostVideo(selectedFile, (percent) => {
+              setUploadProgress(percent);
+            });
+          }
         } catch (uploadErr: any) {
           console.error(uploadErr);
-          setModalError(uploadErr.message || "Failed to upload memory image.");
+          setModalError(uploadErr.message || `Failed to upload memory ${mediaType.toLowerCase()}.`);
           setSubmitting(false);
           setUploading(false);
           setUploadProgress(null);
@@ -138,7 +154,9 @@ export default function Dashboard() {
       }
 
       const newPost = await createPost({
-        imageUrl: uploadedUrl,
+        imageUrl: mediaType === "IMAGE" ? uploadedUrl : null,
+        videoUrl: mediaType === "VIDEO" ? uploadedUrl : null,
+        mediaType,
         caption: caption.trim(),
       });
       
@@ -147,8 +165,8 @@ export default function Dashboard() {
       requestCache.set("feed_posts", updated, 20000);
       
       // Reset and close modal
-      setSelectedImageFile(null);
-      setImagePreviewUrl(null);
+      setSelectedFile(null);
+      setPreviewUrl(null);
       setCaption("");
       setIsModalOpen(false);
     } catch (err: any) {
@@ -290,13 +308,14 @@ export default function Dashboard() {
     });
 
     setActivePostForComments(prev => prev ? { ...prev, commentsCount: prev.commentsCount + 1 } : null);
-    setNewCommentText("");
 
+    setSubmittingComment(true);
     try {
       const created = await addComment(activePostForComments.id, commentVal);
       setComments(prev => {
-        if (!Array.isArray(prev)) return [];
-        const updated = prev.map(c => c.id === optimisticId ? created : c);
+        if (!Array.isArray(prev)) return [created];
+        const filtered = prev.filter(c => c.id !== optimisticId);
+        const updated = [created, ...filtered];
         requestCache.set(`comments_${activePostForComments.id}`, updated, 10000);
         return updated;
       });
@@ -320,6 +339,9 @@ export default function Dashboard() {
         return updated;
       });
       setActivePostForComments(prev => prev ? { ...prev, commentsCount: Math.max(0, prev.commentsCount - 1) } : null);
+    } finally {
+      setSubmittingComment(false);
+      setNewCommentText("");
     }
   };
 
@@ -391,37 +413,38 @@ export default function Dashboard() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-[17px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile & Feed...</p>
+        <p className="text-[15px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse font-light">Loading feed dashboard...</p>
       </main>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-black text-white flex overflow-hidden">
-      {/* Fixed Left Sidebar */}
       <Sidebar user={user} />
 
-      {/* Main Feed Container (Vertical scroll, no horizontal scroll) */}
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
+
         <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
           
           {/* Feed Header with Share Button */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-6 gap-6">
             <div>
-              <h1 className="text-[26px] md:text-[28px] font-light tracking-[0.18em] uppercase leading-tight">Memories Feed</h1>
-              <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5 uppercase">
+              <h1 className="text-[22px] md:text-[24px] font-light tracking-[0.18em] uppercase leading-tight">Memories Feed</h1>
+              <p className="text-[12px] tracking-wider text-neutral-450 mt-1.5 uppercase">
                 {user.department} {user.section ? `Sec ${user.section}` : ""} • Class of {user.batch}
               </p>
             </div>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setIsModalOpen(true)}
-              className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-medium tracking-[0.15em] uppercase transition-all duration-200 flex-shrink-0 cursor-pointer rounded-full shadow-[0_4px_12px_rgba(255,255,255,0.08)]"
+              onClick={() => {
+                setModalError(null);
+                setIsModalOpen(true);
+              }}
+              className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[12px] font-semibold tracking-wider uppercase transition-colors flex-shrink-0 cursor-pointer rounded-full"
             >
               Share a Memory
             </motion.button>
@@ -429,8 +452,8 @@ export default function Dashboard() {
 
           {/* People You May Know Row */}
           {!recLoading && recommendations.length > 0 && (
-            <div className="space-y-3 pb-2 border-b border-white/5">
-              <h3 className="text-[12px] font-semibold text-neutral-450 uppercase tracking-widest">People You May Know</h3>
+            <div className="space-y-3 pb-3 border-b border-white/5">
+              <h3 className="text-[11px] font-semibold text-neutral-500 uppercase tracking-widest">People You May Know</h3>
               <div className="flex overflow-x-auto gap-4 pb-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 {recommendations.map((rec) => (
                   <motion.div
@@ -449,7 +472,7 @@ export default function Dashboard() {
                           unoptimized
                         />
                       ) : (
-                        <span className="text-[14px] font-light text-neutral-450">
+                        <span className="text-[14px] font-light text-neutral-400">
                           {rec.fullName.charAt(0).toUpperCase()}
                         </span>
                       )}
@@ -459,16 +482,21 @@ export default function Dashboard() {
                       {rec.fullName}
                     </h4>
                     
-                    <p className="text-[10px] text-neutral-455 truncate w-full font-light">
+                    {/* Dynamic suggestion matched reason */}
+                    <span className="text-[9px] text-amber-400 font-semibold uppercase tracking-wider truncate w-full">
+                      {rec.recommendationReason || "Matched Connection"}
+                    </span>
+
+                    <p className="text-[10px] text-neutral-455 truncate w-full font-light mt-1">
                       {rec.currentPosition || "Alumni Member"}
                     </p>
                     
-                    <p className="text-[9px] text-neutral-500 font-light mt-1.5 uppercase tracking-wider">
+                    <p className="text-[9px] text-neutral-500 font-light mt-0.5 uppercase tracking-wider">
                       Class of {rec.batch}
                     </p>
 
                     <button
-                      className="mt-3 px-3 py-1.5 bg-white text-black hover:bg-neutral-200 text-[10px] font-bold uppercase tracking-wider rounded-full w-full text-center"
+                      className="mt-3.5 px-3 py-1.5 bg-white text-black hover:bg-neutral-200 text-[10px] font-bold uppercase tracking-wider rounded-full w-full text-center"
                     >
                       Connect
                     </button>
@@ -478,30 +506,106 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Memory of the Day Section */}
+          {!motdLoading && motd && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-panel p-5 rounded-[20px] border border-amber-500/20 shadow-[0_0_20px_rgba(245,158,11,0.04)] relative overflow-hidden group space-y-4"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/[0.02] via-transparent to-transparent pointer-events-none" />
+              <div className="flex justify-between items-center">
+                <span className="text-[11px] font-bold text-amber-400 tracking-widest uppercase flex items-center gap-1">
+                  ✨ Memory of the Day
+                </span>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                  Featured today
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-5">
+                {/* Media preview */}
+                {motd.mediaType === "VIDEO" && motd.videoUrl ? (
+                  <div className="relative w-full sm:w-36 aspect-video sm:aspect-square bg-neutral-950 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center border border-white/5">
+                    <video
+                      src={motd.videoUrl}
+                      controls
+                      preload="none"
+                      loop
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  motd.imageUrl && (
+                    <div className="relative w-full sm:w-36 aspect-video sm:aspect-square bg-neutral-900 rounded-xl overflow-hidden flex-shrink-0 border border-white/5">
+                      <Image
+                        src={motd.imageUrl}
+                        alt="Memory Photo"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  )
+                )}
+
+                {/* Info block */}
+                <div className="flex-1 flex flex-col justify-between py-1 space-y-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Link href={`/alumni/${motd.userId}`} className="text-[13px] font-semibold text-white uppercase tracking-wider hover:underline">
+                        {motd.userFullName}
+                      </Link>
+                      {motd.userCurrentPosition && (
+                        <span className="text-[11px] text-neutral-450 truncate">
+                          • {motd.userCurrentPosition}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-neutral-300 font-light leading-relaxed line-clamp-3 select-text">
+                      {motd.caption}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-neutral-500 tracking-wider">
+                    <span>Posted {new Date(motd.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</span>
+                    <button
+                      onClick={() => handleOpenCommentsModal(motd)}
+                      className="underline hover:text-white transition-colors cursor-pointer uppercase font-semibold"
+                    >
+                      View comments ({motd.commentsCount})
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Feed List */}
           {feedLoading ? (
-            <div className="flex items-center justify-center p-16 glass-panel rounded-[24px]">
-              <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Feed...</span>
+            <div className="flex items-center justify-center p-16 glass-panel rounded-[20px] border border-white/8">
+              <span className="text-[13px] text-neutral-400 tracking-widest uppercase animate-pulse font-light">Loading Feed...</span>
             </div>
           ) : posts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-16 glass-panel text-center space-y-4 rounded-[24px]">
-              <span className="text-[17px] font-light text-neutral-300">No memories shared in your community yet.</span>
-              <p className="text-[15px] text-neutral-500">Be the first to share a graduation or college photo!</p>
+            <div className="flex flex-col items-center justify-center p-16 glass-panel text-center space-y-3 rounded-[20px] border border-white/8">
+              <span className="text-[14px] font-light text-neutral-450 uppercase tracking-widest">No memories shared in your community yet.</span>
+              <p className="text-[12px] text-neutral-500 uppercase tracking-wider">Be the first to share a graduation or college photo!</p>
             </div>
           ) : (
-            <div className="flex flex-col space-y-10">
+            <div className="flex flex-col space-y-8">
               {Array.isArray(posts) && posts.map((post) => (
                 <motion.article 
                   key={post.id}
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="glass-panel rounded-[20px] overflow-hidden flex flex-col max-w-xl w-full mx-auto transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)] hover:border-white/15"
+                  className="glass-panel rounded-[20px] overflow-hidden flex flex-col max-w-xl w-full mx-auto border border-white/8 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)]"
                 >
                   
                   {/* Post Creator Info */}
                   <div className="flex items-center space-x-3.5 p-4 border-b border-white/5">
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center">
                       {post.userProfilePicture ? (
                         <Image
                           src={post.userProfilePicture}
@@ -511,40 +615,52 @@ export default function Dashboard() {
                           unoptimized
                         />
                       ) : (
-                        <span className="text-[15px] font-light text-neutral-400">
+                        <span className="text-[13px] font-light text-neutral-450">
                           {post.userFullName.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
                       <div className="flex items-baseline space-x-2">
-                        <Link href={`/alumni/${post.userId}`} className="text-[14px] font-medium text-white tracking-wide hover:underline leading-none">
+                        <Link href={`/alumni/${post.userId}`} className="text-[13px] font-semibold text-white tracking-wider hover:underline leading-none uppercase">
                           {post.userFullName}
                         </Link>
                         {post.userCurrentPosition && (
-                          <span className="text-[13px] text-neutral-400 hidden sm:inline">• {post.userCurrentPosition}</span>
+                          <span className="text-[12px] text-neutral-450 hidden sm:inline">• {post.userCurrentPosition}</span>
                         )}
                       </div>
-                      <span className="text-[11px] text-neutral-500 block mt-1 leading-none">{formatTime(post.createdAt)}</span>
+                      <span className="text-[10px] text-neutral-500 block mt-1 leading-none uppercase font-light tracking-wider">{formatTime(post.createdAt)}</span>
                     </div>
                   </div>
 
-                  {/* Post Image */}
-                  {post.imageUrl && (
-                    <div className="relative w-full aspect-square md:aspect-[4/3] bg-neutral-900/10 border-b border-white/5">
-                      <Image
-                        src={post.imageUrl}
-                        alt="Memory Photo"
-                        fill
-                        className="object-cover"
-                        unoptimized
+                  {/* Post Media: Video or Image */}
+                  {post.mediaType === "VIDEO" && post.videoUrl ? (
+                    <div className="relative w-full aspect-square md:aspect-[4/3] bg-neutral-950 border-b border-white/5 flex items-center justify-center">
+                      <video
+                        src={post.videoUrl}
+                        controls
+                        preload="none"
+                        loop
+                        muted
+                        className="w-full h-full object-cover"
                       />
                     </div>
+                  ) : (
+                    post.imageUrl && (
+                      <div className="relative w-full aspect-square md:aspect-[4/3] bg-neutral-900/10 border-b border-white/5">
+                        <Image
+                          src={post.imageUrl}
+                          alt="Memory Photo"
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                    )
                   )}
 
                   {/* Post Details & Interaction */}
-                  <div className="p-5 space-y-4">
-                    {/* Action buttons (Like & Comment) */}
+                  <div className="p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-5">
                         {/* Like Button */}
@@ -575,30 +691,25 @@ export default function Dashboard() {
                         </button>
                       </div>
 
-                      <div className="text-[13px] text-neutral-400 font-light">
+                      <div className="text-[12px] text-neutral-450 font-light uppercase tracking-wider">
                         {post.likesCount} likes
                       </div>
                     </div>
 
-                    {/* Caption & Metadata */}
-                    <div className="space-y-1.5">
-                      <p className="text-[14px] font-light text-neutral-200 leading-relaxed whitespace-pre-wrap">
-                        <span className="font-semibold text-white mr-2">{post.userFullName}</span>
-                        {post.caption}
-                      </p>
-                    </div>
-
-                    {/* Comments trigger */}
+                    <p className="text-[13.5px] font-light text-neutral-200 leading-relaxed select-text">
+                      <span className="font-semibold text-white uppercase tracking-wider mr-2">{post.userFullName}</span>
+                      {post.caption}
+                    </p>
+                    
                     {post.commentsCount > 0 && (
                       <button
                         onClick={() => handleOpenCommentsModal(post)}
-                        className="text-[13px] text-neutral-400 hover:text-neutral-300 font-light block focus:outline-none cursor-pointer"
+                        className="text-[12px] text-neutral-500 hover:text-white font-medium transition-colors uppercase tracking-wider cursor-pointer block"
                       >
                         View all {post.commentsCount} comments
                       </button>
                     )}
                   </div>
-
                 </motion.article>
               ))}
             </div>
@@ -607,106 +718,157 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Share a Memory Modal */}
+      {/* Share Memory Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            onClick={() => setIsModalOpen(false)}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[26px] p-4"
+            transition={{ duration: 0.25 }}
+            onClick={() => {
+              if (!submitting) setIsModalOpen(false);
+            }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-[26px] p-4"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-6 shadow-2xl relative rounded-[24px]"
+              className="w-full max-w-xl glass-panel p-6 md:p-8 space-y-6 shadow-2xl relative rounded-[20px] border border-white/8"
               onClick={(e) => e.stopPropagation()}
             >
               <div>
-                <h2 className="text-[20px] font-light tracking-[0.15em] uppercase text-white leading-tight">Share a Memory</h2>
-                <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5">Upload a memory image and write a caption.</p>
+                <h2 className="text-[18px] font-light tracking-[0.15em] uppercase text-white leading-tight">Share a Memory</h2>
+                <p className="text-[12px] tracking-wider text-neutral-400 mt-1.5">Upload a memory image or video and write a caption.</p>
               </div>
 
               {modalError && (
-                <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-[15px] tracking-wider rounded-xl">
+                <div className="p-4 bg-red-950/20 border border-red-900/50 text-red-500 text-[12px] tracking-wider rounded-xl text-center">
                   {modalError}
                 </div>
               )}
 
-              <form onSubmit={handleCreatePost} className="space-y-6">
+              <form onSubmit={handleCreatePost} className="space-y-5 text-[12px]">
                 
-                {/* Image Selection */}
+                {/* Media Selection */}
+                <div className="space-y-2.5">
+                  <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">Memory Media Type</label>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                        setMediaType("IMAGE");
+                      }}
+                      className={`flex-1 py-2 text-center text-[11px] font-bold uppercase tracking-wider rounded-full border ${
+                        mediaType === "IMAGE" 
+                          ? "bg-white text-black border-white" 
+                          : "bg-transparent text-white border-white/10 hover:border-white"
+                      }`}
+                    >
+                      Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewUrl(null);
+                        setMediaType("VIDEO");
+                      }}
+                      className={`flex-1 py-2 text-center text-[11px] font-bold uppercase tracking-wider rounded-full border ${
+                        mediaType === "VIDEO" 
+                          ? "bg-white text-black border-white" 
+                          : "bg-transparent text-white border-white/10 hover:border-white"
+                      }`}
+                    >
+                      Video (Max 30MB)
+                    </button>
+                  </div>
+                </div>
+
+                {/* File picker */}
                 <div className="space-y-3">
-                  <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Choose Image (Optional)</label>
+                  <label className="text-[10px] tracking-widest uppercase text-neutral-450 block font-bold">
+                    Select {mediaType === "IMAGE" ? "Photo" : "Video"}
+                  </label>
                   <div className="flex items-center gap-4">
-                    <label className="px-5 py-3 glass-button text-[15px] font-semibold tracking-widest uppercase transition-all duration-300 cursor-pointer rounded-xl">
-                      Select Image
+                    <label className="px-4 py-2 bg-white text-black text-[11px] font-bold tracking-widest uppercase hover:bg-neutral-200 transition-all cursor-pointer rounded-full">
+                      Choose file
                       <input
                         type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        accept={mediaType === "IMAGE" ? "image/jpeg,image/jpg,image/png,image/webp" : "video/mp4,video/quicktime,video/webm"}
                         onChange={(e) => {
                           const files = e.target.files;
                           if (!files || files.length === 0) return;
                           const file = files[0];
 
-                          // Size Check
-                          if (file.size > 10 * 1024 * 1024) {
-                            setModalError("File size exceeds the maximum limit of 10 MB.");
-                            return;
-                          }
-                          const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-                          if (!allowedTypes.includes(file.type)) {
-                            setModalError("Unsupported file format. Only JPG, JPEG, PNG, and WEBP are allowed.");
-                            return;
+                          if (mediaType === "IMAGE") {
+                            if (file.size > 10 * 1024 * 1024) {
+                              setModalError("File size exceeds the limit of 10 MB for images.");
+                              return;
+                            }
+                          } else {
+                            if (file.size > 30 * 1024 * 1024) {
+                              setModalError("File size exceeds the limit of 30 MB for videos.");
+                              return;
+                            }
                           }
 
                           setModalError(null);
-                          setSelectedImageFile(file);
-                          setImagePreviewUrl(URL.createObjectURL(file));
+                          setSelectedFile(file);
+                          setPreviewUrl(URL.createObjectURL(file));
                         }}
                         className="hidden"
                       />
                     </label>
-                    {selectedImageFile && (
-                      <span className="text-[15px] text-neutral-400 truncate max-w-[220px]">
-                        {selectedImageFile.name}
+                    {selectedFile && (
+                      <span className="text-[12px] text-neutral-450 truncate max-w-[220px]">
+                        {selectedFile.name}
                       </span>
                     )}
                   </div>
 
-                  {/* Selected Image Preview */}
-                  {imagePreviewUrl && (
-                    <div className="relative mt-3 border border-white/5 bg-neutral-900/30 flex items-center justify-center p-3 max-h-[180px] overflow-hidden rounded-xl">
-                      <img
-                        src={imagePreviewUrl}
-                        alt="Preview"
-                        className="max-h-[156px] w-auto object-contain rounded-lg"
-                      />
+                  {/* Selected Preview */}
+                  {previewUrl && (
+                    <div className="relative mt-3 border border-white/5 bg-neutral-900/30 flex items-center justify-center p-3 max-h-[180px] overflow-hidden rounded-2xl">
+                      {mediaType === "IMAGE" ? (
+                        <img
+                          src={previewUrl}
+                          alt="Preview"
+                          className="max-h-[156px] w-auto object-contain rounded-lg"
+                        />
+                      ) : (
+                        <video
+                          src={previewUrl}
+                          muted
+                          controls
+                          className="max-h-[156px] w-auto rounded-lg"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedImageFile(null);
-                          setImagePreviewUrl(null);
+                          setSelectedFile(null);
+                          setPreviewUrl(null);
                         }}
-                        className="absolute top-3 right-3 bg-black/80 hover:bg-black text-[13px] uppercase tracking-wider px-3 py-1.5 border border-white/10 hover:border-white/30 transition-colors rounded-lg"
+                        className="absolute top-3 right-3 bg-black/80 hover:bg-black text-[10px] uppercase tracking-wider px-3 py-1.5 border border-white/10 rounded-lg cursor-pointer"
                       >
                         Remove
                       </button>
                     </div>
                   )}
 
-                  {/* Upload Progress Indicator */}
+                  {/* Upload Progress */}
                   {uploadProgress !== null && (
                     <div className="space-y-2">
-                      <div className="flex justify-between text-[13px] uppercase tracking-widest text-neutral-400">
-                        <span>Uploading Image</span>
+                      <div className="flex justify-between text-[11px] uppercase tracking-widest text-neutral-400">
+                        <span>Uploading {mediaType.toLowerCase()}</span>
                         <span>{uploadProgress}%</span>
                       </div>
-                      <div className="w-full bg-white/5 h-1.5 overflow-hidden rounded-full">
+                      <div className="w-full bg-white/5 h-1 overflow-hidden rounded-full">
                         <div
                           className="bg-white h-full transition-all duration-150"
                           style={{ width: `${uploadProgress}%` }}
@@ -718,37 +880,36 @@ export default function Dashboard() {
 
                 {/* Caption Textarea */}
                 <div className="space-y-2">
-                  <label className="text-[15px] tracking-widest uppercase text-neutral-300 block font-bold">Caption *</label>
+                  <label className="text-[10px] tracking-widest uppercase text-neutral-455 block font-bold">Write a caption *</label>
                   <textarea
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
-                    rows={4}
+                    rows={3}
+                    placeholder="Describe this classmate memory..."
+                    className="w-full glass-input text-[13.5px] p-3 resize-none focus:outline-none rounded-xl"
                     required
-                    className="w-full glass-input focus:outline-none text-[16px] p-4 resize-none rounded-xl"
-                    placeholder="What's on your mind? Share college stories, graduation moments..."
                   />
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-4 border-t border-white/5">
+                {/* Actions */}
+                <div className="flex gap-4 pt-3 border-t border-white/5">
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 py-3.5 glass-button-primary text-[17px] font-semibold tracking-widest uppercase transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-2xl"
+                    className="flex-1 py-3 text-center bg-white text-black text-[12px] font-bold tracking-widest uppercase hover:bg-neutral-200 transition-colors rounded-full cursor-pointer disabled:opacity-50"
                   >
                     {submitting ? "Sharing..." : "Post Memory"}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setIsModalOpen(false);
-                      setSelectedImageFile(null);
-                      setImagePreviewUrl(null);
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
                       setCaption("");
-                      setModalError(null);
+                      setIsModalOpen(false);
                     }}
                     disabled={submitting}
-                    className="flex-1 py-3.5 glass-button text-[17px] font-semibold tracking-widest uppercase transition-all duration-300 ease-out cursor-pointer rounded-2xl"
+                    className="flex-1 py-3 bg-transparent text-white text-[12px] font-semibold tracking-widest uppercase border border-white/10 hover:border-white transition-colors rounded-full cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -783,15 +944,15 @@ export default function Dashboard() {
               {/* Modal Title & Stats */}
               <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
-                  <h2 className="text-[20px] font-light tracking-[0.15em] uppercase leading-tight">Comments</h2>
-                  <p className="text-[12px] tracking-wider text-neutral-400 mt-1.5 uppercase">
+                  <h2 className="text-[18px] font-light tracking-[0.15em] uppercase leading-tight">Comments</h2>
+                  <p className="text-[11px] tracking-wider text-neutral-400 mt-1.5 uppercase">
                     By {activePostForComments.userFullName} • {activePostForComments.commentsCount} Comments
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePostForComments(null)}
-                  className="text-neutral-450 hover:text-white text-[11px] uppercase tracking-widest border border-white/10 hover:border-white px-3 py-1.5 cursor-pointer rounded-full transition-colors"
+                  className="text-neutral-400 hover:text-white text-[12px] uppercase tracking-widest border border-white/10 hover:border-white px-4 py-2 cursor-pointer rounded-full transition-colors"
                 >
                   Close
                 </button>
@@ -801,18 +962,18 @@ export default function Dashboard() {
               <div className="flex-1 overflow-y-auto min-h-[220px] space-y-5 pr-2">
                 {commentsLoading ? (
                   <div className="flex justify-center items-center h-32">
-                    <span className="text-[15px] text-neutral-400 tracking-widest uppercase animate-pulse">Loading Comments...</span>
+                    <span className="text-[13px] text-neutral-400 tracking-widest uppercase animate-pulse font-semibold">Loading Comments...</span>
                   </div>
                 ) : comments.length === 0 ? (
-                  <div className="flex justify-center items-center h-32 text-neutral-500 text-[15px]">
+                  <div className="flex justify-center items-center h-32 text-neutral-500 text-[13px] uppercase tracking-wider font-light">
                     <span>No comments yet.</span>
                   </div>
                 ) : (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     {Array.isArray(comments) && comments.map((comment) => (
                       <div key={comment.id} className="flex items-start justify-between border-b border-white/5 pb-4 gap-4">
-                        <div className="flex items-start space-x-4">
-                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                        <div className="flex items-start space-x-3.5">
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
                             {comment.userProfilePicture ? (
                               <Image
                                 src={comment.userProfilePicture}
@@ -822,29 +983,28 @@ export default function Dashboard() {
                                 unoptimized
                               />
                             ) : (
-                              <span className="text-[15px] text-neutral-400 font-light">
+                              <span className="text-[12px] text-neutral-400 font-light">
                                 {comment.userFullName.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
                           <div>
                             <div className="flex items-baseline space-x-2">
-                              <span className="text-[15px] font-semibold text-white tracking-wide">{comment.userFullName}</span>
+                              <span className="text-[13px] font-semibold text-white tracking-wide">{comment.userFullName}</span>
                               {comment.userCurrentPosition && (
-                                <span className="text-[13px] text-neutral-400 hidden sm:inline">• {comment.userCurrentPosition}</span>
+                                <span className="text-[11px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
                               )}
                             </div>
-                            <span className="text-[13px] text-neutral-500 block mt-1">{formatTime(comment.createdAt)}</span>
-                            <p className="text-[15px] font-light text-neutral-200 mt-2 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
+                            <span className="text-[10px] text-neutral-550 block mt-1 uppercase font-light tracking-wider">{formatTime(comment.createdAt)}</span>
+                            <p className="text-[13px] font-light text-neutral-200 mt-2 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
                           </div>
                         </div>
 
-                        {/* Delete comment option (owner only) */}
                         {comment.userId === user.id && (
                           <button
                             type="button"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="text-neutral-500 hover:text-red-400 text-[13px] tracking-wider uppercase border border-transparent hover:border-red-950 px-3 py-1.5 flex-shrink-0 cursor-pointer rounded-lg transition-all"
+                            className="text-neutral-500 hover:text-red-400 text-[11px] tracking-wider uppercase border border-white/5 hover:border-red-955 px-2.5 py-1 flex-shrink-0 cursor-pointer rounded-full transition-colors"
                             title="Delete Comment"
                           >
                             Delete
@@ -857,9 +1017,9 @@ export default function Dashboard() {
               </div>
 
               {/* Comment Form */}
-              <form onSubmit={handleAddComment} className="flex space-x-4 pt-5 border-t border-white/5">
+              <form onSubmit={handleAddComment} className="flex space-x-3 pt-4 border-t border-white/5">
                 {commentSubmitError && (
-                  <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[13px] tracking-wider rounded-lg">
+                  <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[12px] tracking-wider rounded-xl">
                     {commentSubmitError}
                   </div>
                 )}
@@ -868,12 +1028,12 @@ export default function Dashboard() {
                   value={newCommentText}
                   onChange={(e) => setNewCommentText(e.target.value)}
                   placeholder="Write a comment..."
-                  className="flex-1 glass-input focus:outline-none p-3 text-[14px] rounded-full"
+                  className="flex-1 glass-input focus:outline-none px-4 py-2.5 text-[13px] rounded-full"
                 />
                 <button
                   type="submit"
                   disabled={submittingComment}
-                  className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                  className="py-2.5 px-4 bg-white text-black hover:bg-neutral-200 text-[12px] font-bold uppercase tracking-widest rounded-full transition-colors cursor-pointer disabled:opacity-50 flex-shrink-0"
                 >
                   Post
                 </button>
