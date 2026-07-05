@@ -71,25 +71,27 @@ export default function Login() {
         </div>
 
         {/* Branding Title */}
-        <div className="space-y-3">
-          <h1 className="text-[32px] font-light tracking-[0.2em] uppercase text-white leading-tight">
-            Alumni Hub
+        <div className="space-y-2 text-center">
+          <h1 className="text-[30px] font-extralight tracking-[0.3em] uppercase bg-clip-text text-transparent bg-gradient-to-b from-white to-white/70 leading-tight">
+            ALUMNI HUB
           </h1>
-          <p className="text-neutral-450 text-[15px] tracking-[0.25em] uppercase font-light">
+          <p className="text-neutral-455 text-[12px] tracking-[0.25em] uppercase font-light">
             Reconnect • Remember • Relive
           </p>
         </div>
 
         {/* Action Button */}
         <div className="pt-4 flex flex-col items-center space-y-4 w-full">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.015 }}
+            whileTap={{ scale: 0.985 }}
             type="button"
             disabled={loading}
             onClick={handleGoogleLogin}
-            className="w-full py-4 glass-button-primary text-[17px] font-semibold tracking-[0.15em] uppercase rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-50"
+            className="w-full py-3.5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold tracking-[0.18em] uppercase transition-all duration-300 cursor-pointer disabled:opacity-50 rounded-full shadow-[0_4px_20px_rgba(255,255,255,0.1)]"
           >
             {loading ? "Authenticating..." : "Continue with Google"}
-          </button>
+          </motion.button>
           
           {error && (
             <p className="text-[15px] text-red-500 tracking-[0.05em] font-light uppercase max-w-xs leading-relaxed pt-2">

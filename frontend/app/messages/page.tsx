@@ -443,11 +443,22 @@ function MessagesContent() {
                     <button
                       key={c.id}
                       onClick={() => setActiveConversation(c)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-[16px] text-left transition-all duration-200 cursor-pointer ${
-                        isActive ? "bg-white/10" : "hover:bg-white/5"
+                      className={`w-full relative flex items-center gap-3.5 p-3 rounded-xl text-left transition-all duration-300 cursor-pointer border ${
+                        isActive 
+                          ? "bg-white/[0.08] border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.03)]" 
+                          : "hover:bg-white/[0.04] border-transparent"
                       }`}
                     >
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                      {/* Left Active Indicator */}
+                      {isActive && (
+                        <motion.div
+                          layoutId="chatActiveIndicator"
+                          className="absolute left-1 w-[3px] h-[45%] bg-white rounded-full"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        />
+                      )}
+
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0 ml-1.5">
                         {c.participant.profilePicture ? (
                           <Image
                             src={c.participant.profilePicture}
@@ -457,7 +468,7 @@ function MessagesContent() {
                             unoptimized
                           />
                         ) : (
-                          <span className="text-[17px] font-bold text-white uppercase">
+                          <span className="text-[13px] font-medium text-white uppercase">
                             {c.participant.fullName.charAt(0)}
                           </span>
                         )}
@@ -465,16 +476,16 @@ function MessagesContent() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline">
-                          <h4 className="text-[16px] font-semibold text-white truncate leading-none mb-1">
+                          <h4 className="text-[14px] font-medium text-white truncate leading-none mb-1">
                             {c.participant.fullName}
                           </h4>
                           {c.lastMessageTime && (
-                            <span className="text-[12px] text-neutral-500 font-light flex-shrink-0 ml-2">
+                            <span className="text-[11px] text-neutral-500 font-light flex-shrink-0 ml-2">
                               {new Date(c.lastMessageTime).toLocaleDateString([], { month: "short", day: "numeric" })}
                             </span>
                           )}
                         </div>
-                        <p className={`text-[15px] truncate leading-none pr-4 ${c.unreadCount > 0 ? "text-white font-bold" : "text-neutral-400"}`}>
+                        <p className={`text-[13px] truncate leading-none pr-4 mt-1 ${c.unreadCount > 0 ? "text-white font-bold" : "text-neutral-450"}`}>
                           {c.lastMessageImageUrl ? "📷 Image message" : c.lastMessageText || "No messages yet"}
                         </p>
                       </div>
@@ -584,10 +595,10 @@ function MessagesContent() {
                             {/* Message Container / Bubble */}
                             <div className="flex flex-col">
                               <div
-                                className={`relative p-4 rounded-[20px] text-[16px] leading-relaxed transition-all duration-200 ${
+                                className={`relative py-2.5 px-4 rounded-[18px] text-[14px] leading-relaxed transition-all duration-200 border ${
                                   isOwn
-                                    ? "bg-white text-black rounded-tr-[4px]"
-                                    : "bg-white/5 border border-white/8 text-white rounded-tl-[4px]"
+                                    ? "bg-white border-white text-black rounded-tr-[4px]"
+                                    : "bg-white/[0.04] border-white/8 text-white rounded-tl-[4px]"
                                 }`}
                               >
                                 {/* Optional Image attachment */}
@@ -623,7 +634,7 @@ function MessagesContent() {
                               </div>
                               
                               {/* Small details below bubble (Timestamp) */}
-                              <span className="text-[12px] text-neutral-500 font-light mt-1 self-end px-1 select-none">
+                              <span className="text-[10px] text-neutral-500 font-light mt-1 self-end px-1 select-none">
                                 {formatTime(m.createdAt)}
                               </span>
                             </div>
@@ -631,7 +642,7 @@ function MessagesContent() {
 
                           {/* Seen Indicator */}
                           {showSeen && (
-                            <span className="text-[12px] text-neutral-450 italic mt-0.5 px-2 font-light select-none">
+                            <span className="text-[10px] text-neutral-450 italic mt-0.5 px-2 font-light select-none">
                               Seen
                             </span>
                           )}
@@ -735,14 +746,14 @@ function MessagesContent() {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     placeholder="Message..."
-                    className="flex-1 glass-input focus:outline-none p-3.5 text-[16px] rounded-xl"
+                    className="flex-1 glass-input focus:outline-none px-4 py-2.5 text-[14px] rounded-full"
                   />
 
                   {/* Send Button */}
                   <button
                     type="submit"
                     disabled={uploadingImage || (!inputText.trim() && !selectedImage)}
-                    className="py-3 px-6 glass-button-primary text-[15px] font-semibold uppercase tracking-widest rounded-xl transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                    className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0 shadow-[0_4px_12px_rgba(255,255,255,0.08)]"
                   >
                     Send
                   </button>
@@ -755,9 +766,9 @@ function MessagesContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </div>
-                <h2 className="text-[24px] font-light tracking-widest uppercase text-white leading-tight">Your Inbox</h2>
-                <p className="text-[17px] text-neutral-400 font-light max-w-sm mx-auto leading-relaxed">
-                  Select a classmate from the list or browse classmate directory to start messaging.
+                <h2 className="text-[20px] font-light tracking-[0.15em] uppercase text-white leading-tight">Your Inbox</h2>
+                <p className="text-[14px] text-neutral-450 font-light max-w-xs mx-auto leading-relaxed">
+                  Select a classmate from the list or browse classmates to start messaging.
                 </p>
               </div>
             )}

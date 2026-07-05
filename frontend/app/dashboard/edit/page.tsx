@@ -255,17 +255,17 @@ export default function EditProfile() {
       <Sidebar user={currentUser} />
 
       {/* Main Edit Container */}
-      <main className="flex-1 h-screen overflow-y-auto pl-16 md:pl-64 flex flex-col relative select-none">
+      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
         
         {/* Glow effect */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
 
-        <div className="z-10 w-full max-w-2xl mx-auto px-4 md:px-8 py-8 md:py-12 flex flex-col space-y-8">
+        <div className="z-10 w-full max-w-xl mx-auto px-4 md:px-8 py-8 md:py-12 flex flex-col space-y-6">
           
           {/* Header */}
-          <div className="pb-4 border-b border-neutral-900">
-            <h1 className="text-xl md:text-2xl font-light tracking-widest uppercase text-white">Edit Profile</h1>
-            <p className="text-xs tracking-wider text-neutral-500 mt-1 uppercase">Update your professional details below</p>
+          <div className="pb-4 border-b border-white/5">
+            <h1 className="text-[20px] md:text-[22px] font-light tracking-[0.15em] uppercase text-white leading-tight">Edit Profile</h1>
+            <p className="text-[12px] tracking-wider text-neutral-450 mt-1.5 uppercase">Update your professional details below</p>
           </div>
 
           {error && (
@@ -508,11 +508,11 @@ export default function EditProfile() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-neutral-900">
+            <div className="flex flex-col sm:flex-row gap-4 pt-5 border-t border-white/5">
               <button
                 type="submit"
                 disabled={submitting}
-                className="flex-1 py-3 text-center bg-white text-black text-xs font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-xl"
+                className="flex-1 py-3 text-center bg-white text-black text-[13px] font-semibold tracking-[0.18em] uppercase hover:bg-neutral-200 transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-full shadow-[0_4px_12px_rgba(255,255,255,0.08)]"
               >
                 {submitting ? "Saving..." : "Save Changes"}
               </button>
@@ -520,7 +520,7 @@ export default function EditProfile() {
                 type="button"
                 onClick={() => router.push("/dashboard")}
                 disabled={submitting}
-                className="flex-1 py-3 bg-transparent text-white text-xs font-semibold tracking-widest uppercase border border-neutral-800 hover:border-white transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-xl"
+                className="flex-1 py-3 bg-transparent text-white text-[13px] font-semibold tracking-[0.18em] uppercase border border-white/10 hover:border-white transition-all duration-300 ease-out cursor-pointer disabled:opacity-50 rounded-full"
               >
                 Cancel
               </button>

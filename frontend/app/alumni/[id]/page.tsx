@@ -127,7 +127,7 @@ export default function AlumniProfile({ params }: PageProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="glass-panel p-8 md:p-12 space-y-8 shadow-2xl rounded-[24px]"
+            className="glass-panel p-6 md:p-10 space-y-6 shadow-2xl rounded-[20px] border border-white/8"
           >
             
             {/* Main Avatar + Name Block */}
@@ -148,15 +148,15 @@ export default function AlumniProfile({ params }: PageProps) {
                 )}
               </div>
               <div>
-                <h1 className="text-[32px] font-light tracking-wide uppercase text-white leading-tight">{alumni.fullName}</h1>
-                <p className="text-[17px] text-neutral-400 mt-2 uppercase tracking-wider font-light">
+                <h1 className="text-[24px] md:text-[26px] font-light tracking-wide uppercase text-white leading-tight">{alumni.fullName}</h1>
+                <p className="text-[13px] text-neutral-450 mt-1.5 uppercase tracking-wider font-light">
                   {alumni.currentPosition || "Alumni Member"}
                 </p>
                 {currentUser?.id !== alumni.id && (
                   <button
                     onClick={handleMessageClick}
                     disabled={messaging}
-                    className="mt-5 py-2.5 px-6 glass-button-primary text-[15px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-300 rounded-xl cursor-pointer disabled:opacity-50"
+                    className="mt-4 py-2 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-medium tracking-[0.15em] uppercase transition-all duration-300 rounded-full cursor-pointer disabled:opacity-50"
                   >
                     {messaging ? "Connecting..." : "Message"}
                   </button>
@@ -165,16 +165,16 @@ export default function AlumniProfile({ params }: PageProps) {
             </div>
 
             {/* Core Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-[17px] font-light text-neutral-300">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-[14px] font-light text-neutral-300">
               
               <div className="space-y-4">
                 <div>
-                  <span className="text-neutral-500 block text-[15px] uppercase tracking-wider mb-1 font-bold">Email</span>
+                  <span className="text-neutral-500 block text-[12px] uppercase tracking-wider mb-1 font-bold">Email</span>
                   <span className="text-white select-text">{alumni.email}</span>
                 </div>
                 {alumni.phoneNumber && (
                   <div>
-                    <span className="text-neutral-500 block text-[15px] uppercase tracking-wider mb-1 font-bold">Phone Number</span>
+                    <span className="text-neutral-500 block text-[12px] uppercase tracking-wider mb-1 font-bold">Phone Number</span>
                     <span className="text-white select-text">{alumni.phoneNumber}</span>
                   </div>
                 )}
@@ -182,7 +182,7 @@ export default function AlumniProfile({ params }: PageProps) {
 
               <div className="space-y-4">
                 <div>
-                  <span className="text-neutral-500 block text-[15px] uppercase tracking-wider mb-1 font-bold">Academic Community</span>
+                  <span className="text-neutral-500 block text-[12px] uppercase tracking-wider mb-1 font-bold">Academic Community</span>
                   <span className="text-white">
                     Class of {alumni.batch} • {alumni.department} {alumni.section ? `Sec ${alumni.section}` : ""}
                   </span>
@@ -194,8 +194,8 @@ export default function AlumniProfile({ params }: PageProps) {
             {/* Bio block */}
             {alumni.bio && (
               <div className="space-y-2 pt-5 border-t border-white/5">
-                <span className="text-neutral-500 block text-[15px] uppercase tracking-wider font-bold">Bio</span>
-                <p className="text-neutral-300 text-[17px] font-light leading-relaxed select-text whitespace-pre-wrap">
+                <span className="text-neutral-500 block text-[12px] uppercase tracking-wider font-bold">Bio</span>
+                <p className="text-neutral-300 text-[14px] font-light leading-relaxed select-text whitespace-pre-wrap">
                   {alumni.bio}
                 </p>
               </div>
@@ -204,14 +204,14 @@ export default function AlumniProfile({ params }: PageProps) {
             {/* Social Links Block */}
             {(alumni.linkedinUrl || alumni.githubUrl || alumni.instagramUrl) && (
               <div className="space-y-3 pt-5 border-t border-white/5">
-                <span className="text-neutral-500 block text-[15px] uppercase tracking-wider font-bold">Social Links</span>
-                <div className="flex flex-wrap gap-5 text-[17px]">
+                <span className="text-neutral-500 block text-[12px] uppercase tracking-wider font-bold">Social Links</span>
+                <div className="flex flex-wrap gap-5 text-[14px]">
                   {alumni.linkedinUrl && (
                     <a
                       href={alumni.linkedinUrl.startsWith("http") ? alumni.linkedinUrl : `https://${alumni.linkedinUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       LinkedIn
                     </a>
@@ -221,7 +221,7 @@ export default function AlumniProfile({ params }: PageProps) {
                       href={alumni.githubUrl.startsWith("http") ? alumni.githubUrl : `https://${alumni.githubUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-455 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       GitHub
                     </a>
@@ -231,7 +231,7 @@ export default function AlumniProfile({ params }: PageProps) {
                       href={alumni.instagramUrl.startsWith("http") ? alumni.instagramUrl : `https://${alumni.instagramUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-455 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       Instagram
                     </a>

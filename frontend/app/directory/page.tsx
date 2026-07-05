@@ -127,23 +127,23 @@ export default function Directory() {
 
       {/* Main Directory Container */}
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
-        <div className="z-10 w-full max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-10">
+        <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
           
           {/* Header block with search bar */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/5 pb-8 gap-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/5 pb-6 gap-6">
             <div>
-              <h1 className="text-[32px] font-light tracking-widest uppercase leading-tight">Classmates</h1>
-              <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+              <h1 className="text-[26px] md:text-[28px] font-light tracking-[0.18em] uppercase leading-tight">Classmates</h1>
+              <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5 uppercase">
                 Academic Community Directory
               </p>
             </div>
-            <div className="w-full md:w-96 relative">
+            <div className="w-full md:w-80 relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                placeholder="Search classmates by name or position..."
-                className="w-full glass-input focus:outline-none text-[16px] p-4 rounded-xl"
+                placeholder="Search classmates by name..."
+                className="w-full glass-input focus:outline-none text-[14px] px-4 py-2.5 rounded-full"
               />
             </div>
           </div>
@@ -180,47 +180,47 @@ export default function Directory() {
                     visible: { opacity: 1, y: 0 }
                   }}
                   onClick={() => router.push(`/alumni/${alumni.id}`)}
-                  className="glass-panel rounded-[24px] p-6 flex flex-col items-center text-center cursor-pointer hover:border-white/20 transition-all duration-300 group relative overflow-hidden"
+                  className="glass-panel rounded-[20px] p-5 flex flex-col items-center text-center cursor-pointer border border-white/8 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)] hover:border-white/15 group relative overflow-hidden"
                 >
                   {/* Subtle hover overlay */}
-                  <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <div className="absolute inset-0 bg-white/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
                   {/* Avatar */}
-                  <div className="relative w-22 h-22 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center mb-5">
+                  <div className="relative w-18 h-18 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center mb-4">
                     {alumni.profilePicture ? (
                       <Image
                         src={alumni.profilePicture}
                         alt={alumni.fullName}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-cover"
                         unoptimized
                       />
                     ) : (
-                      <span className="text-3xl font-light text-neutral-400">
+                      <span className="text-2xl font-light text-neutral-400">
                         {alumni.fullName.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>
 
                   {/* Classmate Info */}
-                  <h3 className="text-[20px] font-semibold text-white tracking-wide uppercase truncate max-w-full leading-snug">
+                  <h3 className="text-[16px] font-semibold text-white tracking-wide uppercase truncate max-w-full leading-snug">
                     {alumni.fullName}
                   </h3>
                   
-                  <span className="text-[17px] text-neutral-400 mt-2 min-h-[22px] truncate max-w-full font-light">
+                  <span className="text-[13px] text-neutral-450 mt-1.5 min-h-[20px] truncate max-w-full font-light">
                     {alumni.currentPosition || "Alumni Member"}
                   </span>
 
-                  <div className="w-full border-t border-white/5 my-4 pt-4 flex flex-col gap-2 text-[15px] text-neutral-400 font-light">
-                    <div>
-                      <span>Batch:</span> <span className="text-white font-medium">{alumni.batch}</span>
+                  <div className="w-full border-t border-white/5 my-3.5 pt-3.5 flex flex-col gap-1.5 text-[13px] text-neutral-455 font-light">
+                    <div className="flex justify-between px-2">
+                      <span>Batch</span> <span className="text-white font-medium">{alumni.batch}</span>
                     </div>
-                    <div>
-                      <span>Branch:</span> <span className="text-white font-medium">{alumni.department}</span>
+                    <div className="flex justify-between px-2">
+                      <span>Branch</span> <span className="text-white font-medium">{alumni.department}</span>
                     </div>
                     {alumni.section && (
-                      <div>
-                        <span>Section:</span> <span className="text-white font-medium">{alumni.section}</span>
+                      <div className="flex justify-between px-2">
+                        <span>Section</span> <span className="text-white font-medium">{alumni.section}</span>
                       </div>
                     )}
                   </div>

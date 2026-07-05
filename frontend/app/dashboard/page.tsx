@@ -398,13 +398,13 @@ export default function Dashboard() {
 
       {/* Main Feed Container (Vertical scroll, no horizontal scroll) */}
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
-        <div className="z-10 w-full max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-10">
+        <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
           
           {/* Feed Header with Share Button */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-8 gap-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/5 pb-6 gap-6">
             <div>
-              <h1 className="text-[32px] font-light tracking-widest uppercase leading-tight">Memories Feed</h1>
-              <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+              <h1 className="text-[26px] md:text-[28px] font-light tracking-[0.18em] uppercase leading-tight">Memories Feed</h1>
+              <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5 uppercase">
                 {user.department} {user.section ? `Sec ${user.section}` : ""} • Class of {user.batch}
               </p>
             </div>
@@ -412,7 +412,7 @@ export default function Dashboard() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setIsModalOpen(true)}
-              className="py-3.5 px-8 glass-button-primary text-[17px] font-semibold tracking-widest uppercase hover:bg-neutral-200 transition-all duration-200 flex-shrink-0 cursor-pointer rounded-2xl"
+              className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-medium tracking-[0.15em] uppercase transition-all duration-200 flex-shrink-0 cursor-pointer rounded-full shadow-[0_4px_12px_rgba(255,255,255,0.08)]"
             >
               Share a Memory
             </motion.button>
@@ -436,12 +436,12 @@ export default function Dashboard() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
-                  className="glass-panel rounded-[24px] overflow-hidden flex flex-col max-w-2xl w-full mx-auto"
+                  className="glass-panel rounded-[20px] overflow-hidden flex flex-col max-w-xl w-full mx-auto transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(255,255,255,0.02)] hover:border-white/15"
                 >
                   
                   {/* Post Creator Info */}
-                  <div className="flex items-center space-x-4 p-5 border-b border-white/5">
-                    <div className="relative w-11 h-11 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center">
+                  <div className="flex items-center space-x-3.5 p-4 border-b border-white/5">
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center">
                       {post.userProfilePicture ? (
                         <Image
                           src={post.userProfilePicture}
@@ -451,21 +451,21 @@ export default function Dashboard() {
                           unoptimized
                         />
                       ) : (
-                        <span className="text-[17px] font-light text-neutral-400">
+                        <span className="text-[15px] font-light text-neutral-400">
                           {post.userFullName.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     <div>
                       <div className="flex items-baseline space-x-2">
-                        <Link href={`/alumni/${post.userId}`} className="text-[17px] font-semibold text-white tracking-wide hover:underline leading-none">
+                        <Link href={`/alumni/${post.userId}`} className="text-[14px] font-medium text-white tracking-wide hover:underline leading-none">
                           {post.userFullName}
                         </Link>
                         {post.userCurrentPosition && (
-                          <span className="text-[15px] text-neutral-400 hidden sm:inline">• {post.userCurrentPosition}</span>
+                          <span className="text-[13px] text-neutral-400 hidden sm:inline">• {post.userCurrentPosition}</span>
                         )}
                       </div>
-                      <span className="text-[15px] text-neutral-500 block mt-1 leading-none">{formatTime(post.createdAt)}</span>
+                      <span className="text-[11px] text-neutral-500 block mt-1 leading-none">{formatTime(post.createdAt)}</span>
                     </div>
                   </div>
 
@@ -483,36 +483,46 @@ export default function Dashboard() {
                   )}
 
                   {/* Post Details & Interaction */}
-                  <div className="p-6 space-y-5">
+                  <div className="p-5 space-y-4">
                     {/* Action buttons (Like & Comment) */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-5">
                         {/* Like Button */}
                         <motion.button
-                          whileTap={{ scale: 1.2 }}
+                          whileTap={{ scale: 1.15 }}
                           onClick={() => handleLikeToggle(post.id)}
-                          className="text-[28px] hover:opacity-85 transition-opacity focus:outline-none cursor-pointer"
+                          className="hover:opacity-80 transition-opacity focus:outline-none cursor-pointer flex items-center justify-center p-1"
                         >
-                          {post.likedByMe ? "❤️" : "🤍"}
+                          {post.likedByMe ? (
+                            <svg className="w-5 h-5 text-red-500 fill-red-500" viewBox="0 0 24 24">
+                              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-neutral-450 hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                            </svg>
+                          )}
                         </motion.button>
 
                         {/* Comment Button */}
                         <button
                           onClick={() => handleOpenCommentsModal(post)}
-                          className="text-[28px] hover:opacity-85 transition-opacity focus:outline-none cursor-pointer"
+                          className="hover:opacity-80 transition-opacity focus:outline-none cursor-pointer flex items-center justify-center p-1"
                         >
-                          💬
+                          <svg className="w-5 h-5 text-neutral-450 hover:text-white transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-1.879 2.249c-.198.118-.231.378-.06.513.17.135.424.088.583-.05a7.71 7.71 0 002.222-2.152c.26-.33.64-.489 1.05-.489h.567A10.82 10.82 0 0012 20.25z" />
+                          </svg>
                         </button>
                       </div>
 
-                      <div className="text-[15px] text-neutral-400 font-light">
+                      <div className="text-[13px] text-neutral-400 font-light">
                         {post.likesCount} likes
                       </div>
                     </div>
 
                     {/* Caption & Metadata */}
-                    <div className="space-y-2">
-                      <p className="text-[17px] font-light text-neutral-200 leading-relaxed whitespace-pre-wrap">
+                    <div className="space-y-1.5">
+                      <p className="text-[14px] font-light text-neutral-200 leading-relaxed whitespace-pre-wrap">
                         <span className="font-semibold text-white mr-2">{post.userFullName}</span>
                         {post.caption}
                       </p>
@@ -522,7 +532,7 @@ export default function Dashboard() {
                     {post.commentsCount > 0 && (
                       <button
                         onClick={() => handleOpenCommentsModal(post)}
-                        className="text-[15px] text-neutral-400 hover:text-neutral-300 font-light block focus:outline-none cursor-pointer"
+                        className="text-[13px] text-neutral-400 hover:text-neutral-300 font-light block focus:outline-none cursor-pointer"
                       >
                         View all {post.commentsCount} comments
                       </button>
@@ -540,17 +550,25 @@ export default function Dashboard() {
       {/* Share a Memory Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={() => setIsModalOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[26px] p-4"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-8 shadow-2xl relative rounded-[24px]"
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-6 shadow-2xl relative rounded-[24px]"
+              onClick={(e) => e.stopPropagation()}
             >
               <div>
-                <h2 className="text-[24px] font-light tracking-widest uppercase text-white leading-tight">Share a Memory</h2>
-                <p className="text-[15px] tracking-wider text-neutral-400 mt-2">Upload a memory image and write a caption.</p>
+                <h2 className="text-[20px] font-light tracking-[0.15em] uppercase text-white leading-tight">Share a Memory</h2>
+                <p className="text-[13px] tracking-wider text-neutral-400 mt-1.5">Upload a memory image and write a caption.</p>
               </div>
 
               {modalError && (
@@ -678,34 +696,42 @@ export default function Dashboard() {
 
               </form>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Comments List Modal */}
       <AnimatePresence>
         {activePostForComments && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={() => setActivePostForComments(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[26px] p-4"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-6 shadow-2xl relative flex flex-col max-h-[90vh] rounded-[24px]"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-xl glass-panel p-6 md:p-8 space-y-5 shadow-2xl relative flex flex-col max-h-[90vh] rounded-[24px]"
+              onClick={(e) => e.stopPropagation()}
             >
               
               {/* Modal Title & Stats */}
-              <div className="flex justify-between items-start border-b border-white/5 pb-5">
+              <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
-                  <h2 className="text-[24px] font-light tracking-widest uppercase leading-tight">Comments</h2>
-                  <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+                  <h2 className="text-[20px] font-light tracking-[0.15em] uppercase leading-tight">Comments</h2>
+                  <p className="text-[12px] tracking-wider text-neutral-400 mt-1.5 uppercase">
                     By {activePostForComments.userFullName} • {activePostForComments.commentsCount} Comments
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePostForComments(null)}
-                  className="text-neutral-450 hover:text-white text-[13px] uppercase tracking-widest border border-white/10 hover:border-white px-4 py-2 cursor-pointer rounded-xl transition-colors"
+                  className="text-neutral-450 hover:text-white text-[11px] uppercase tracking-widest border border-white/10 hover:border-white px-3 py-1.5 cursor-pointer rounded-full transition-colors"
                 >
                   Close
                 </button>
@@ -771,34 +797,30 @@ export default function Dashboard() {
               </div>
 
               {/* Comment Form */}
-              <form onSubmit={handleAddComment} className="space-y-4 pt-5 border-t border-white/5">
+              <form onSubmit={handleAddComment} className="flex space-x-4 pt-5 border-t border-white/5">
                 {commentSubmitError && (
                   <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[13px] tracking-wider rounded-lg">
                     {commentSubmitError}
                   </div>
                 )}
-                <div className="flex space-x-4">
-                  <input
-                    type="text"
-                    maxLength={500}
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Add a comment... (max 500 chars)"
-                    className="flex-1 glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    disabled={submittingComment}
-                    className="glass-button-primary text-[15px] font-semibold tracking-widest uppercase px-6 hover:bg-neutral-200 disabled:opacity-50 cursor-pointer rounded-xl"
-                  >
-                    {submittingComment ? "Posting..." : "Post"}
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="flex-1 glass-input focus:outline-none p-3 text-[14px] rounded-full"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingComment}
+                  className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                >
+                  Post
+                </button>
               </form>
 
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

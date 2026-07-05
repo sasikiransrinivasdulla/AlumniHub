@@ -194,13 +194,13 @@ export default function ProfilePage() {
 
       {/* Main Container */}
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
-        <div className="z-10 w-full max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-12">
+        <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
           
           {/* Profile Header Block */}
-          <div className="glass-panel rounded-[24px] p-8 md:p-12 flex flex-col md:flex-row items-center md:items-start md:space-x-10 gap-6">
+          <div className="glass-panel rounded-[20px] p-6 md:p-8 flex flex-col md:flex-row items-center md:items-start md:space-x-8 gap-6 border border-white/8 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)]">
             
             {/* Left Column: Avatar */}
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+            <div className="relative w-28 h-28 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg">
               {user.profilePicture ? (
                 <Image
                   src={user.profilePicture}
@@ -210,7 +210,7 @@ export default function ProfilePage() {
                   unoptimized
                 />
               ) : (
-                <span className="text-5xl font-light text-neutral-400">
+                <span className="text-4xl font-light text-neutral-450">
                   {user.fullName.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -221,25 +221,25 @@ export default function ProfilePage() {
               
               {/* Header: Name and Action buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <h2 className="text-[32px] font-light tracking-wide uppercase text-white leading-tight">{user.fullName}</h2>
+                <h2 className="text-[24px] md:text-[26px] font-light tracking-wide uppercase text-white leading-tight">{user.fullName}</h2>
                 <Link
                   href="/dashboard/edit"
-                  className="px-6 py-2.5 glass-button text-[17px] font-semibold tracking-wider hover:border-white transition-colors duration-200 uppercase rounded-xl"
+                  className="px-4 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-[11px] font-medium tracking-[0.15em] transition-all duration-200 uppercase rounded-full"
                 >
                   Edit Profile
                 </Link>
               </div>
 
               {/* Counts: Posts, Batch, Department */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 text-[15px] text-neutral-400 font-light uppercase tracking-wider">
-                <span><strong className="text-white font-semibold">{myPosts.length}</strong> posts</span>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-5 text-[13px] text-neutral-450 font-light uppercase tracking-wider">
+                <span><strong className="text-white font-medium">{myPosts.length}</strong> posts</span>
                 <span>Class of {user.batch}</span>
                 <span>{user.department} {user.section ? `Sec ${user.section}` : ""}</span>
               </div>
 
               {/* Bio & Professional Info */}
-              <div className="space-y-2 text-[17px] font-light text-neutral-300 leading-relaxed max-w-lg">
-                <span className="text-white font-medium block text-[20px]">
+              <div className="space-y-1.5 text-[14px] font-light text-neutral-355 leading-relaxed max-w-lg">
+                <span className="text-white font-medium block text-[17px]">
                   {user.currentPosition || "Alumni Member"}
                 </span>
                 {user.bio && (
@@ -249,13 +249,13 @@ export default function ProfilePage() {
 
               {/* Social Links */}
               {(user.linkedinUrl || user.githubUrl || user.instagramUrl) && (
-                <div className="flex flex-wrap gap-5 pt-3 text-[15px]">
+                <div className="flex flex-wrap gap-4 pt-2 text-[13px]">
                   {user.linkedinUrl && (
                     <a
                       href={user.linkedinUrl.startsWith("http") ? user.linkedinUrl : `https://${user.linkedinUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       LinkedIn
                     </a>
@@ -265,7 +265,7 @@ export default function ProfilePage() {
                       href={user.githubUrl.startsWith("http") ? user.githubUrl : `https://${user.githubUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       GitHub
                     </a>
@@ -275,7 +275,7 @@ export default function ProfilePage() {
                       href={user.instagramUrl.startsWith("http") ? user.instagramUrl : `https://${user.instagramUrl}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-400 hover:text-white uppercase tracking-widest text-[15px] underline"
+                      className="text-neutral-450 hover:text-white uppercase tracking-widest text-[12px] underline"
                     >
                       Instagram
                     </a>
@@ -332,14 +332,18 @@ export default function ProfilePage() {
                   )}
 
                   {/* Hover stats overlay */}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-6 text-[17px]">
-                    <div className="flex items-center space-x-2">
-                      <span>❤️</span>
-                      <span className="font-semibold text-white">{post.likesCount}</span>
+                  <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center space-x-5 text-[14px]">
+                    <div className="flex items-center space-x-1.5">
+                      <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
+                      <span className="font-medium text-white">{post.likesCount}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span>💬</span>
-                      <span className="font-semibold text-white">{post.commentsCount}</span>
+                    <div className="flex items-center space-x-1.5">
+                      <svg className="w-4 h-4 text-white fill-white" viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z" />
+                      </svg>
+                      <span className="font-medium text-white">{post.commentsCount}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -353,20 +357,28 @@ export default function ProfilePage() {
       {/* Post Detail / Comments Modal */}
       <AnimatePresence>
         {activePostForComments && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            onClick={() => setActivePostForComments(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[26px] p-4"
+          >
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className="w-full max-w-xl glass-panel p-8 md:p-10 space-y-6 shadow-2xl relative flex flex-col max-h-[90vh] rounded-[24px]"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-xl glass-panel p-6 md:p-8 space-y-5 shadow-2xl relative flex flex-col max-h-[90vh] rounded-[24px]"
+              onClick={(e) => e.stopPropagation()}
             >
               
               {/* Modal Title & Stats */}
-              <div className="flex justify-between items-start border-b border-white/5 pb-5">
+              <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
-                  <h2 className="text-[24px] font-light tracking-widest uppercase leading-tight">Memory Detail</h2>
-                  <p className="text-[15px] tracking-wider text-neutral-400 mt-2 uppercase">
+                  <h2 className="text-[20px] font-light tracking-[0.15em] uppercase leading-tight">Memory Detail</h2>
+                  <p className="text-[12px] tracking-wider text-neutral-400 mt-1.5 uppercase">
                     Shared {formatTime(activePostForComments.createdAt)}
                   </p>
                 </div>
@@ -467,34 +479,30 @@ export default function ProfilePage() {
               </div>
 
               {/* Comment Form */}
-              <form onSubmit={handleAddComment} className="space-y-4 pt-5 border-t border-white/5">
+              <form onSubmit={handleAddComment} className="flex space-x-4 pt-5 border-t border-white/5">
                 {commentSubmitError && (
                   <div className="p-3 bg-red-950/20 border border-red-900/50 text-red-500 text-[13px] tracking-wider rounded-lg">
                     {commentSubmitError}
                   </div>
                 )}
-                <div className="flex space-x-4">
-                  <input
-                    type="text"
-                    maxLength={500}
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Add a comment... (max 500 chars)"
-                    className="flex-1 glass-input focus:outline-none text-[16px] p-3.5 rounded-xl"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    disabled={submittingComment}
-                    className="glass-button-primary text-[15px] font-semibold tracking-widest uppercase px-6 hover:bg-neutral-200 disabled:opacity-50 cursor-pointer rounded-xl"
-                  >
-                    {submittingComment ? "Posting..." : "Post"}
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="flex-1 glass-input focus:outline-none p-3 text-[14px] rounded-full"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingComment}
+                  className="py-2.5 px-5 bg-white text-black hover:bg-neutral-200 text-[13px] font-semibold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer disabled:opacity-50 flex-shrink-0"
+                >
+                  Post
+                </button>
               </form>
 
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

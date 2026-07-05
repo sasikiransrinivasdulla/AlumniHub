@@ -173,8 +173,8 @@ export default function Sidebar({ user }: SidebarProps) {
                 priority
               />
             </div>
-            <span className="hidden md:block font-light text-[22px] tracking-[0.2em] text-white uppercase select-none leading-none">
-              Alumni Hub
+            <span className="hidden md:block font-extralight text-[20px] tracking-[0.3em] bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60 uppercase select-none leading-none">
+              ALUMNI HUB
             </span>
           </Link>
 
@@ -185,13 +185,24 @@ export default function Sidebar({ user }: SidebarProps) {
 
               const content = (
                 <motion.div
-                  whileHover={{ x: 6 }}
-                  className={`flex items-center gap-5 py-4 px-4 rounded-2xl transition-colors duration-200 ${
-                    isActive ? "bg-white/10" : "hover:bg-white/5"
+                  whileHover={{ x: 4 }}
+                  className={`relative flex items-center gap-5 py-3.5 px-4 rounded-xl transition-all duration-300 ${
+                    isActive 
+                      ? "bg-white/[0.08] border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.03)] text-white" 
+                      : "hover:bg-white/[0.04] border border-transparent text-neutral-400 hover:text-white"
                   }`}
                 >
+                  {/* Left Active Indicator */}
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="absolute left-1 w-[3px] h-[50%] bg-white rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
+                  )}
+
                   {item.isProfile ? (
-                    <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/20 bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                    <div className="relative w-6 h-6 rounded-full overflow-hidden border border-white/20 bg-neutral-900 flex items-center justify-center flex-shrink-0 ml-1.5">
                       {user?.profilePicture ? (
                         <Image
                           src={user.profilePicture}
@@ -201,21 +212,21 @@ export default function Sidebar({ user }: SidebarProps) {
                           unoptimized
                         />
                       ) : (
-                        <span className="text-[11px] text-white font-bold uppercase">
+                        <span className="text-[10px] text-white font-medium uppercase">
                           {user?.fullName?.charAt(0) || "U"}
                         </span>
                       )}
                     </div>
                   ) : (
-                    <div className={`relative transition-transform duration-200 ${isActive ? "scale-110 text-white" : "text-neutral-400"}`}>
+                    <div className={`relative transition-all duration-300 ml-1.5 ${isActive ? "scale-105 text-white" : "text-neutral-400"}`}>
                       {item.icon}
                       {item.label === "Messages" && unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-white text-black font-bold text-[10px] w-5 h-5 flex items-center justify-center rounded-full border border-black shadow">
+                        <span className="absolute -top-1.5 -right-1.5 bg-white text-black font-bold text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-black shadow">
                           {unreadCount}
                         </span>
                       )}
                       {item.label === "Notifications" && unreadNotificationsCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-white text-black font-bold text-[10px] w-5 h-5 flex items-center justify-center rounded-full border border-black shadow">
+                        <span className="absolute -top-1.5 -right-1.5 bg-white text-black font-bold text-[9px] w-4.5 h-4.5 flex items-center justify-center rounded-full border border-black shadow">
                           {unreadNotificationsCount}
                         </span>
                       )}
@@ -223,20 +234,20 @@ export default function Sidebar({ user }: SidebarProps) {
                   )}
 
                   <span
-                    className={`hidden md:block text-[18px] tracking-wide font-light ${
-                      isActive ? "text-white font-semibold" : "text-neutral-300"
+                    className={`hidden md:block text-[15px] tracking-wider font-light ${
+                      isActive ? "text-white font-medium" : "text-neutral-300"
                     }`}
                   >
                     {item.label === "Profile" ? "My Profile" : item.label}
                   </span>
 
                   {item.label === "Messages" && unreadCount > 0 && (
-                    <span className="hidden md:flex bg-white text-black font-bold text-[12px] w-6 h-6 rounded-full items-center justify-center ml-auto">
+                    <span className="hidden md:flex bg-white text-black font-bold text-[10px] w-5 h-5 rounded-full items-center justify-center ml-auto">
                       {unreadCount}
                     </span>
                   )}
                   {item.label === "Notifications" && unreadNotificationsCount > 0 && (
-                    <span className="hidden md:flex bg-white text-black font-bold text-[12px] w-6 h-6 rounded-full items-center justify-center ml-auto">
+                    <span className="hidden md:flex bg-white text-black font-bold text-[10px] w-5 h-5 rounded-full items-center justify-center ml-auto">
                       {unreadNotificationsCount}
                     </span>
                   )}
@@ -285,10 +296,11 @@ export default function Sidebar({ user }: SidebarProps) {
             {/* Backdrop to close drawer */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
               onClick={() => setActiveDrawer(null)}
-              className="fixed inset-0 bg-black/60 z-30 ml-20 md:ml-72"
+              className="fixed inset-0 bg-black/75 backdrop-blur-[26px] z-30 ml-20 md:ml-72"
             />
             {/* Drawer body */}
             <motion.div
@@ -300,7 +312,7 @@ export default function Sidebar({ user }: SidebarProps) {
             >
               {activeDrawer === "notifications" ? (
                 <div className="flex flex-col h-full w-full">
-                  <h3 className="text-[22px] font-light tracking-widest uppercase text-white mb-6 border-b border-white/5 pb-4">
+                  <h3 className="text-[18px] font-light tracking-[0.2em] uppercase text-white mb-6 border-b border-white/5 pb-4">
                     Notifications
                   </h3>
                   
