@@ -1,5 +1,44 @@
 import { requestCache } from "./cacheService";
 
+export interface UserExperience {
+  id?: string;
+  title: string;
+  company: string;
+  location?: string;
+  startDate: string;
+  endDate?: string;
+  currentJob?: boolean;
+  description?: string;
+}
+
+export interface UserEducation {
+  id?: string;
+  school: string;
+  degree?: string;
+  fieldOfStudy?: string;
+  startDate: string;
+  endDate?: string;
+  description?: string;
+}
+
+export interface UserProject {
+  id?: string;
+  title: string;
+  description?: string;
+  url?: string;
+  role?: string;
+}
+
+export interface UserCertification {
+  id?: string;
+  name: string;
+  issuingOrganization: string;
+  issueDate?: string;
+  expirationDate?: string;
+  credentialId?: string;
+  credentialUrl?: string;
+}
+
 export interface UserProfile {
   id: string;
   firebaseUid: string;
@@ -29,6 +68,31 @@ export interface UserProfile {
   instagramUrl: string | null;
   profileCompleted: boolean;
   role: string;
+
+  // Mentorship settings
+  mentorSkills?: string | null;
+  mentorExperience?: string | null;
+  mentorCompany?: string | null;
+  mentorAvailability?: string | null;
+  mentorMeetingMode?: string | null;
+  mentorHelpAreas?: string | null;
+
+  // Advanced profile sections
+  resumeUrl?: string | null;
+  portfolioUrl?: string | null;
+  websiteUrl?: string | null;
+  researchPapers?: string | null;
+
+  // Counter metrics
+  profileViews?: number;
+  searchAppearances?: number;
+
+  // Lists
+  experiences?: UserExperience[];
+  educations?: UserEducation[];
+  projects?: UserProject[];
+  certifications?: UserCertification[];
+
   createdAt: string;
   updatedAt: string;
 }

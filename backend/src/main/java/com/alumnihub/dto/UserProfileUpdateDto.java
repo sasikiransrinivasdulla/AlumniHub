@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -38,7 +39,7 @@ public class UserProfileUpdateDto {
 
     private String privacyLevel;
 
-    @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
+    @Pattern(regexp = "^$|^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     private String phoneNumber;
 
     @Pattern(regexp = "^$|^(https?://)?([a-zA-Z0-9-]+\\.)?linkedin\\.com/.*$", message = "Must be a valid LinkedIn URL")
@@ -53,4 +54,24 @@ public class UserProfileUpdateDto {
     private String badges;
 
     private String openTo;
+
+    // Mentorship fields
+    private String mentorSkills;
+    private String mentorExperience;
+    private String mentorCompany;
+    private String mentorAvailability;
+    private String mentorMeetingMode;
+    private String mentorHelpAreas;
+
+    // Advanced fields
+    private String resumeUrl;
+    private String portfolioUrl;
+    private String websiteUrl;
+    private String researchPapers;
+
+    // List properties
+    private List<UserExperienceDto> experiences;
+    private List<UserEducationDto> educations;
+    private List<UserProjectDto> projects;
+    private List<UserCertificationDto> certifications;
 }

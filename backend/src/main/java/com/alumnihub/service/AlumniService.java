@@ -3,6 +3,7 @@ package com.alumnihub.service;
 import com.alumnihub.dto.UserDto;
 import com.alumnihub.entity.ContactRequest;
 import com.alumnihub.entity.InTouchConnection;
+import com.alumnihub.entity.ProfileViewLog;
 import com.alumnihub.entity.User;
 import com.alumnihub.repository.ContactRequestRepository;
 import com.alumnihub.repository.InTouchConnectionRepository;
@@ -38,6 +39,7 @@ public class AlumniService {
         return searchVisibleAlumniWithFilters(requesterEmail, query, null, null, null, null, null, null, null, null, null);
     }
 
+    @Transactional
     public List<UserDto> searchVisibleAlumniWithFilters(
             String requesterEmail,
             String query,
@@ -105,7 +107,26 @@ public class AlumniService {
             filterPredicates.add(cb.like(cb.lower(userRoot.get("currentPosition")), "%" + position.trim().toLowerCase() + "%"));
         }
         if (batch != null && !batch.trim().isEmpty()) {
-            filterPredicates.add(cb.equal(cb.lower(userRoot.get("batch")), batch.trim().toLowerCase()));
+            if (batch.contains("-")) {
+                String[] parts = batch.split("-");
+                if (parts.length == 2) {
+                    try {
+                        int start = Integer.parseInt(parts[0].trim());
+                        int end = Integer.parseInt(parts[1].trim());
+                        List<Predicate> batchRangePredicates = new ArrayList<>();
+                        for (int yr = start; yr <= end; yr++) {
+                            batchRangePredicates.add(cb.equal(userRoot.get("batch"), String.valueOf(yr)));
+                        }
+                        if (!batchRangePredicates.isEmpty()) {
+                            filterPredicates.add(cb.or(batchRangePredicates.toArray(new Predicate[0])));
+                        }
+                    } catch (NumberFormatException e) {
+                        filterPredicates.add(cb.equal(cb.lower(userRoot.get("batch")), batch.trim().toLowerCase()));
+                    }
+                }
+            } else {
+                filterPredicates.add(cb.equal(cb.lower(userRoot.get("batch")), batch.trim().toLowerCase()));
+            }
         }
         if (department != null && !department.trim().isEmpty()) {
             filterPredicates.add(cb.equal(cb.lower(userRoot.get("department")), department.trim().toLowerCase()));
@@ -135,17 +156,35 @@ public class AlumniService {
         cq.orderBy(cb.asc(userRoot.get("fullName")));
 
         List<User> result = entityManager.createQuery(cq).getResultList();
+        for (User u : result) {
+            u.setSearchAppearances(u.getSearchAppearances() == null ? 1L : u.getSearchAppearances() + 1);
+            userRepository.save(u);
+        }
+
         return result.stream()
                 .map(u -> convertToDtoWithContext(requester, u))
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public UserDto getAlumniDetailsById(String requesterEmail, UUID targetId) {
         User requester = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + requesterEmail));
 
         User target = userRepository.findById(targetId)
                 .orElseThrow(() -> new IllegalArgumentException("Alumni not found with ID: " + targetId));
+
+        if (!requester.getId().equals(target.getId())) {
+            target.setProfileViews(target.getProfileViews() == null ? 1L : target.getProfileViews() + 1);
+            userRepository.save(target);
+
+            ProfileViewLog log = ProfileViewLog.builder()
+                    .viewedUser(target)
+                    .viewerUser(requester)
+                    .viewedAt(LocalDateTime.now())
+                    .build();
+            entityManager.persist(log);
+        }
 
         return convertToDtoWithContext(requester, target);
     }
