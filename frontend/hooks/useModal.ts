@@ -1,17 +1,23 @@
-import { useEffect, RefObject } from "react";
+import { useEffect, useRef, RefObject } from "react";
 
 export function useModal(
   isOpen: boolean,
   onClose: () => void,
   modalRef: RefObject<HTMLElement | null>
 ) {
+  // Track onClose via ref to prevent yanking focus on every parent render
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     // 1. Close on Escape key
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose();
+        onCloseRef.current();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -22,7 +28,7 @@ export function useModal(
         modalRef.current &&
         !modalRef.current.contains(e.target as Node)
       ) {
-        onClose();
+        onCloseRef.current();
       }
     };
     // Delay slightly to prevent the click that triggers the modal from immediately closing it
@@ -47,8 +53,13 @@ export function useModal(
         const firstElement = focusableElements[0];
         const lastElement = focusableElements[focusableElements.length - 1];
         
-        // Auto-focus first element
-        firstElement.focus();
+        // Auto-focus designated autofocus element first, otherwise fall back to first element
+        const autoFocusElement = modalRef.current.querySelector<HTMLElement>("[autoFocus]");
+        if (autoFocusElement) {
+          autoFocusElement.focus();
+        } else {
+          firstElement.focus();
+        }
 
         handleTabKey = (e: KeyboardEvent) => {
           if (e.key !== "Tab") return;
@@ -81,5 +92,5 @@ export function useModal(
         modalRef.current.removeEventListener("keydown", handleTabKey);
       }
     };
-  }, [isOpen, onClose, modalRef]);
+  }, [isOpen, modalRef]);
 }

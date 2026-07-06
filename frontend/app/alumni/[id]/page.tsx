@@ -7,7 +7,7 @@ import { getAlumniDetails, getTimelineEntries, TimelineEntry } from "@/services/
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,6 +27,25 @@ export default function AlumniProfile({ params }: PageProps) {
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [inTouchLoading, setInTouchLoading] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: "success" | "error" | "info" }>({
+    show: false,
+    message: "",
+    type: "info"
+  });
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ show: true, message, type });
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, show: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
 
   const fetchTimeline = async () => {
     try {
@@ -87,7 +106,7 @@ export default function AlumniProfile({ params }: PageProps) {
       router.push(`/messages?conversationId=${conversation.id}`);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to start conversation.");
+      showToast(err.message || "Failed to start conversation.", "error");
     } finally {
       setMessaging(false);
     }
@@ -99,10 +118,12 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { sendInTouchRequest } = await import("@/services/alumniService");
       await sendInTouchRequest(alumni.id);
+      showToast("In-Touch request sent successfully.", "success");
+      setAlumni(prev => prev ? { ...prev, inTouchStatus: "PENDING_SENT" } : null);
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to send connection request.");
+      showToast(err.message || "Failed to send connection request.", "error");
     } finally {
       setInTouchLoading(false);
     }
@@ -114,10 +135,12 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { cancelInTouchRequest } = await import("@/services/alumniService");
       await cancelInTouchRequest(alumni.id);
+      showToast("Connection request cancelled.", "info");
+      setAlumni(prev => prev ? { ...prev, inTouchStatus: "NONE" } : null);
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to cancel connection request.");
+      showToast(err.message || "Failed to cancel connection request.", "error");
     } finally {
       setInTouchLoading(false);
     }
@@ -129,10 +152,12 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { acceptInTouchRequest } = await import("@/services/alumniService");
       await acceptInTouchRequest(alumni.id);
+      showToast("In-Touch connection accepted.", "success");
+      setAlumni(prev => prev ? { ...prev, inTouchStatus: "ACCEPTED" } : null);
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to accept connection.");
+      showToast(err.message || "Failed to accept connection.", "error");
     } finally {
       setInTouchLoading(false);
     }
@@ -144,10 +169,12 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { rejectInTouchRequest } = await import("@/services/alumniService");
       await rejectInTouchRequest(alumni.id);
+      showToast("Connection request declined.", "info");
+      setAlumni(prev => prev ? { ...prev, inTouchStatus: "REJECTED" } : null);
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to reject connection.");
+      showToast(err.message || "Failed to reject connection.", "error");
     } finally {
       setInTouchLoading(false);
     }
@@ -159,10 +186,12 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { removeInTouchConnection } = await import("@/services/alumniService");
       await removeInTouchConnection(alumni.id);
+      showToast("Connection removed.", "info");
+      setAlumni(prev => prev ? { ...prev, inTouchStatus: "NONE" } : null);
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to disconnect.");
+      showToast(err.message || "Failed to disconnect.", "error");
     } finally {
       setInTouchLoading(false);
     }
@@ -174,10 +203,11 @@ export default function AlumniProfile({ params }: PageProps) {
     try {
       const { requestContactDetails } = await import("@/services/alumniService");
       await requestContactDetails(alumni.id);
+      showToast("Contact details requested.", "success");
       const updated = await getAlumniDetails(alumni.id);
       setAlumni(updated);
     } catch (err: any) {
-      alert(err.message || "Failed to request contact details.");
+      showToast(err.message || "Failed to request contact details.", "error");
     } finally {
       setContactLoading(false);
     }
@@ -289,21 +319,26 @@ export default function AlumniProfile({ params }: PageProps) {
                       <button
                         onClick={handleRemoveInTouch}
                         disabled={inTouchLoading}
-                        className="py-1 px-3 border border-white/10 hover:border-red-900 hover:text-red-500 text-[11px] uppercase tracking-wider rounded-full cursor-pointer transition-colors"
+                        className="py-1 px-3 border border-white/10 hover:border-red-900 hover:text-red-500 text-[11px] uppercase tracking-wider rounded-full cursor-pointer transition-colors disabled:opacity-50"
                       >
-                        Disconnect
+                        {inTouchLoading ? "Disconnecting..." : "Disconnect"}
                       </button>
                     </div>
                   )}
 
                   {alumni.inTouchStatus === "PENDING_SENT" && (
-                    <button
-                      onClick={handleCancelInTouch}
-                      disabled={inTouchLoading}
-                      className="py-2 px-4 border border-white/10 text-neutral-400 hover:text-white text-[12px] font-medium tracking-wider uppercase rounded-full cursor-pointer transition-colors"
-                    >
-                      Cancel In-Touch Request
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] text-neutral-450 uppercase tracking-widest font-medium animate-pulse">
+                        ⌛ Requested
+                      </span>
+                      <button
+                        onClick={handleCancelInTouch}
+                        disabled={inTouchLoading}
+                        className="py-1.5 px-3.5 border border-white/10 hover:border-red-500/20 hover:text-red-400 text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        {inTouchLoading ? "Cancelling..." : "Cancel"}
+                      </button>
+                    </div>
                   )}
 
                   {alumni.inTouchStatus === "PENDING_RECEIVED" && (
@@ -311,27 +346,27 @@ export default function AlumniProfile({ params }: PageProps) {
                       <button
                         onClick={handleAcceptInTouch}
                         disabled={inTouchLoading}
-                        className="py-2 px-4 bg-white text-black hover:bg-neutral-200 text-[12px] font-bold tracking-wider uppercase rounded-full cursor-pointer transition-colors"
+                        className="py-2 px-4 bg-white text-black hover:bg-neutral-200 text-[12px] font-bold tracking-wider uppercase rounded-full cursor-pointer transition-colors disabled:opacity-50"
                       >
-                        Accept Request
+                        {inTouchLoading ? "Accepting..." : "Accept Request"}
                       </button>
                       <button
                         onClick={handleRejectInTouch}
                         disabled={inTouchLoading}
-                        className="py-2 px-4 border border-white/10 text-neutral-400 hover:text-white text-[12px] font-medium tracking-wider uppercase rounded-full cursor-pointer transition-colors"
+                        className="py-2 px-4 border border-white/10 text-neutral-400 hover:text-white text-[12px] font-medium tracking-wider uppercase rounded-full cursor-pointer transition-colors disabled:opacity-50"
                       >
-                        Reject
+                        {inTouchLoading ? "Rejecting..." : "Reject"}
                       </button>
                     </div>
                   )}
 
-                  {alumni.inTouchStatus === "NONE" && (
+                  {(alumni.inTouchStatus === "NONE" || alumni.inTouchStatus === "REJECTED") && (
                     <button
                       onClick={handleSendInTouch}
                       disabled={inTouchLoading}
-                      className="py-2 px-4 border border-white/10 text-neutral-300 hover:text-white hover:bg-white/5 text-[12px] font-semibold tracking-wider uppercase rounded-full cursor-pointer transition-all"
+                      className="py-2 px-4 border border-white/10 text-neutral-300 hover:text-white hover:bg-white/5 text-[12px] font-semibold tracking-wider uppercase rounded-full cursor-pointer transition-all disabled:opacity-50"
                     >
-                      Add to In-Touch
+                      {inTouchLoading ? "Sending..." : "Add to In-Touch"}
                     </button>
                   )}
 
@@ -554,6 +589,34 @@ export default function AlumniProfile({ params }: PageProps) {
           </motion.div>
         </div>
       </main>
+
+      <AnimatePresence>
+        {toast.show && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-6 right-6 z-55 flex items-center gap-3 px-5 py-3.5 rounded-2xl border backdrop-blur-[20px] shadow-2xl ${
+              toast.type === "success"
+                ? "bg-emerald-950/80 border-emerald-500/20 text-emerald-400"
+                : toast.type === "error"
+                ? "bg-red-950/80 border-red-500/20 text-red-400"
+                : "bg-neutral-900/80 border-white/5 text-white"
+            }`}
+          >
+            <span className="text-[18px]">
+              {toast.type === "success" ? "✓" : toast.type === "error" ? "⚠" : "ℹ"}
+            </span>
+            <span className="text-[12px] font-medium tracking-wide uppercase">{toast.message}</span>
+            <button
+              onClick={() => setToast(prev => ({ ...prev, show: false }))}
+              className="ml-3 text-neutral-400 hover:text-white text-[14px]"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

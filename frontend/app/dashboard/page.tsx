@@ -891,6 +891,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <label className="text-[10px] tracking-widest uppercase text-neutral-455 block font-bold">Write a caption *</label>
                   <textarea
+                    autoFocus
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
                     rows={3}

@@ -365,16 +365,96 @@ Retrieves complete profile details (including phone number and bio) for a specif
 
 ---
 
+## 🤝 In-Touch Connections API
+
+### Send Connection Request
+Sends an In-Touch connection request to another classmate.
+
+* **Endpoint**: `/api/in-touch/request/{targetUserId}`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
+### Cancel Connection Request
+Cancels an active pending connection request.
+
+* **Endpoint**: `/api/in-touch/cancel/{targetUserId}`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
+### Accept Connection Request
+Accepts an incoming pending connection request.
+
+* **Endpoint**: `/api/in-touch/accept/{senderUserId}`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
+### Reject Connection Request
+Declines an incoming pending connection request.
+
+* **Endpoint**: `/api/in-touch/reject/{senderUserId}`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
+### Disconnect / Remove Connection
+Removes an accepted connection.
+
+* **Endpoint**: `/api/in-touch/remove/{targetUserId}`
+* **HTTP Method**: `POST`
+* **Access Control**: Authenticated
+
+#### Success Response
+* **Status Code**: `200 OK`
+
+---
+
 ## ❌ Error Responses
+
+All validation and access errors return a structured JSON response:
+```json
+{
+  "success": false,
+  "message": "Friendly error details",
+  "code": "ERROR_CODE"
+}
+```
 
 ### Bad Request / Input Validation Failures
 * **Status Code**: `400 Bad Request`
-* **Body**: JSON array or message explaining validation error details (e.g. `Bio must not exceed 500 characters`).
+* **Body**: Structured JSON object with code `INVALID_REQUEST` or validation specifics.
 
-### Unauthorized
+### Unauthorized / Access Restriction
 * **Status Code**: `403 Forbidden`
-* **Body**: Returned when JWT authorization header is missing, invalid, or expired.
+* **Body**: Structured JSON object with code `ACCESS_DENIED`.
+
+### In-Touch Specific Failures
+* **Status Code**: `400 Bad Request`
+* **Body**: Structured JSON error response mapping one of the following codes:
+  - `SELF_REQUEST`: Triggered when attempting to connect with oneself.
+  - `ALREADY_CONNECTED`: Triggered when a connection is already accepted.
+  - `REQUEST_PENDING`: Triggered when an active request is already pending.
+  - `USER_NOT_FOUND`: Triggered when target user ID or email is invalid.
+  - `INVALID_REQUEST`: Triggered for invalid request state transitions.
 
 ### Server Error
 * **Status Code**: `500 Internal Server Error`
-* **Body**: Error message detail description.
+* **Body**: Structured JSON object with code `SERVER_ERROR`.

@@ -120,6 +120,22 @@ export async function getRecommendations(): Promise<UserProfile[]> {
 }
 
 /* In-Touch APIs */
+async function handleResponseError(response: Response, defaultMessage: string): Promise<never> {
+  let errorMsg = defaultMessage;
+  try {
+    const data = await response.json();
+    if (data && data.message) {
+      errorMsg = data.message;
+    }
+  } catch {
+    try {
+      const text = await response.text();
+      if (text) errorMsg = text;
+    } catch {}
+  }
+  throw new Error(errorMsg);
+}
+
 export async function sendInTouchRequest(targetUserId: string): Promise<void> {
   const token = getAuthToken();
   if (!token) throw new Error("No authentication token");
@@ -128,7 +144,7 @@ export async function sendInTouchRequest(targetUserId: string): Promise<void> {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error(await response.text() || "Failed to send In-Touch request");
+  if (!response.ok) await handleResponseError(response, "Failed to send In-Touch request");
 }
 
 export async function cancelInTouchRequest(targetUserId: string): Promise<void> {
@@ -139,7 +155,7 @@ export async function cancelInTouchRequest(targetUserId: string): Promise<void> 
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error(await response.text() || "Failed to cancel In-Touch request");
+  if (!response.ok) await handleResponseError(response, "Failed to cancel In-Touch request");
 }
 
 export async function acceptInTouchRequest(senderUserId: string): Promise<void> {
@@ -150,7 +166,7 @@ export async function acceptInTouchRequest(senderUserId: string): Promise<void> 
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error(await response.text() || "Failed to accept In-Touch request");
+  if (!response.ok) await handleResponseError(response, "Failed to accept In-Touch request");
 }
 
 export async function rejectInTouchRequest(senderUserId: string): Promise<void> {
@@ -161,7 +177,7 @@ export async function rejectInTouchRequest(senderUserId: string): Promise<void> 
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error(await response.text() || "Failed to reject In-Touch request");
+  if (!response.ok) await handleResponseError(response, "Failed to reject In-Touch request");
 }
 
 export async function removeInTouchConnection(targetUserId: string): Promise<void> {
@@ -172,7 +188,7 @@ export async function removeInTouchConnection(targetUserId: string): Promise<voi
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response.ok) throw new Error(await response.text() || "Failed to remove connection");
+  if (!response.ok) await handleResponseError(response, "Failed to remove connection");
 }
 
 export async function getReceivedRequests(): Promise<UserProfile[]> {

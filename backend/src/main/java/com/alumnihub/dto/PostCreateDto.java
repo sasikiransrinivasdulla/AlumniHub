@@ -17,5 +17,6 @@ public class PostCreateDto {
     private String mediaType;
     
     @NotBlank(message = "Caption must not be blank")
+    @jakarta.validation.constraints.Size(max = 1000, message = "Caption must not exceed 1000 characters")
     private String caption;
 }
