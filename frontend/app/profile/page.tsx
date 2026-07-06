@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMemoriesFeed, Post } from "@/services/postService";
@@ -33,6 +34,8 @@ export default function ProfilePage() {
   // Comments / Detail modal state
   const [activePostForComments, setActivePostForComments] = useState<Post | null>(null);
   const [comments, setComments] = useState<CommentDto[]>([]);
+  const commentModalRef = useRef<HTMLDivElement>(null);
+  useModal(activePostForComments !== null, () => setActivePostForComments(null), commentModalRef);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState("");
   const [commentSubmitError, setCommentSubmitError] = useState<string | null>(null);
@@ -591,6 +594,10 @@ export default function ProfilePage() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[26px] p-4"
           >
             <motion.div
+              ref={commentModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Memory Detail"
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}

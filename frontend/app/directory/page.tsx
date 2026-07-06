@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useModal } from "@/hooks/useModal";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getAlumniDirectory, searchAlumniDirectoryWithFilters, AlumniFilters } from "@/services/alumniService";
 import Image from "next/image";
@@ -22,6 +23,8 @@ export default function Directory() {
   const [loading, setLoading] = useState(true);
   const [directoryLoading, setDirectoryLoading] = useState(true);
   const [showDrawer, setShowDrawer] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useModal(showDrawer, () => setShowDrawer(false), drawerRef);
 
   const [filters, setFilters] = useState<AlumniFilters>({
     q: "",
@@ -298,6 +301,10 @@ export default function Directory() {
                 />
 
                 <motion.div
+                  ref={drawerRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Search Filters"
                   initial={{ x: "100%" }}
                   animate={{ x: 0 }}
                   exit={{ x: "100%" }}

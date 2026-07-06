@@ -13,22 +13,29 @@ The client follows a clean layout exploiting Next.js App Router:
   - `dashboard/` (Profile page): Displays authenticated user profile data fetched dynamically.
   - `dashboard/edit/` (Edit page): Provides validated inputs and dropdowns to update details.
   - `profile/setup/` (Setup page): Mandatory onboarding form displaying read-only details alongside Batch, Department, and dynamic Section dropdown selectors.
-* **`components/`**: Reusable component structures.
+* **`components/`**: Reusable component structures (Sidebar, CursorTrail, PageTransition).
 * **`lib/`**: External sdk configs.
   - `firebase.ts` parses client parameters and exports Auth provider models.
 * **`services/`**: Communication and token storage clients.
   - `authService.ts` wraps HTTP requests to the backend (login, getProfile, updateProfile) and handles token caching.
   - `postService.ts` provides wrappers for post creation and memories feed retrieval.
   - `likeCommentService.ts` coordinates toggling likes and posting/deleting comments.
-  - `alumniService.ts` provides classmates listing and search lookups.
+  - `alumniService.ts` provides classmates listing, search lookups, and connection logic.
+  - `eventService.ts` coordinates event creation, RSVP toggles, and retrieval.
+  - `mentorshipService.ts` handles mentorship pairing requests, approvals, and logs.
+  - `jobService.ts` provides wrappers for job post creation and bookmarks.
+  - `referralService.ts` manages referral requests and job postings.
+  - `achievementService.ts` publishes and reads achievement records.
+  - `reunionService.ts` coordinates album galleries, photos/videos, and timelines.
+  - `analyticsService.ts` retrieves connections growth, profile views, and monthly activities.
 
 ### 2. Backend Architecture (Spring Boot 3)
 The backend is structured into standard enterprise layers:
-* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`), profile (`UserController`), feed (`PostController`), likes/comments (`LikeCommentController`), and directory (`AlumniController`) REST endpoints.
-* **Service (`service/`)**: Houses transaction boundaries, visibility authorization, and business logic (`AuthService`, `UserService`, `PostService`, `LikeCommentService`, `AlumniService`).
-* **Repository (`repository/`)**: Spring Data JPA query interfaces (`UserRepository`, `PostRepository`, `LikeRepository`, `CommentRepository`).
-* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs (`User`, `Post`, `Like`, `Comment`).
-* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications (`UserDto`, `UserProfileUpdateDto`, `PostDto`, `PostCreateDto`, `CommentDto`, `CommentCreateDto`, `LikeStatusDto`, `AuthRequest`, `AuthResponse`).
+* **Controller (`controller/`)**: Decouples HTTP bindings. Exposes auth (`AuthController`), profile (`UserController`), feed (`PostController`), likes/comments (`LikeCommentController`), directory (`AlumniController`), and dedicated controllers for events, mentorship, referrals, jobs, achievements, reunions, and analytics.
+* **Service (`service/`)**: Houses transaction boundaries, visibility authorization, and business logic (`AuthService`, `UserService`, `PostService`, `LikeCommentService`, `AlumniService`, and matching services for events, mentorship, referrals, jobs, achievements, reunions, and analytics).
+* **Repository (`repository/`)**: Spring Data JPA query interfaces.
+* **Entity (`entity/`)**: Maps PostgreSQL tables to Java POJOs.
+* **DTO (`dto/`)**: Formulates strict JSON request/response schema specifications.
 * **Security & Config (`security/`, `config/`)**: Manages CORS headers, Spring security permissions, JWT interceptor filters (`JwtFilter`), and Firebase Admin credentials.
 
 ---

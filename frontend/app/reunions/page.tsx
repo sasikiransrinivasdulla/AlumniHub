@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getReunions, createReunion, rsvpReunion, withdrawReunion, addReunionComment, ReunionCollectionDto } from "@/services/reunionService";
@@ -15,6 +16,8 @@ export default function ReunionsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", date: "", location: "" });
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModal(showCreate, () => setShowCreate(false), modalRef);
 
   useEffect(() => {
     async function load() {
@@ -121,7 +124,16 @@ export default function ReunionsPage() {
             {showCreate && (
               <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCreate(false)} className="fixed inset-0 z-40 bg-black/80 backdrop-blur-[26px]" />
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                <motion.div
+                  ref={modalRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Create Reunion"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                >
                   <div className="glass-panel border border-white/8 rounded-[24px] p-8 max-w-lg w-full space-y-5">
                     <h2 className="text-[16px] font-semibold uppercase tracking-widest text-white">Create Reunion</h2>
                     <div className="space-y-3 text-[12px]">

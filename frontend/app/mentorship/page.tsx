@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
 import { getUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import { getMentors, getRequestsAsMentor, getRequestsAsMentee, requestMentorship, acceptMentorship, rejectMentorship, registerAsMentor, MentorshipRequestDto, MentorshipRequestCreateDto } from "@/services/mentorshipService";
@@ -19,6 +20,8 @@ export default function MentorshipPage() {
   const [loading, setLoading] = useState(true);
   const [showRequest, setShowRequest] = useState<string | null>(null);
   const [requestMessage, setRequestMessage] = useState("");
+  const modalRef = useRef<HTMLDivElement>(null);
+  useModal(showRequest !== null, () => setShowRequest(null), modalRef);
   const [regForm, setRegForm] = useState({ skills: "", experience: "", company: "", availability: "", meetingMode: "online", helpAreas: "" });
 
   useEffect(() => {
@@ -183,7 +186,16 @@ export default function MentorshipPage() {
             {showRequest && (
               <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRequest(null)} className="fixed inset-0 z-40 bg-black/80 backdrop-blur-[26px]" />
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed inset-0 z-50 flex items-center justify-center p-6">
+                <motion.div
+                  ref={modalRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Send Request"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                >
                   <div className="glass-panel border border-white/8 rounded-[24px] p-8 max-w-md w-full space-y-5">
                     <h2 className="text-[16px] font-semibold uppercase tracking-widest text-white">Send Request</h2>
                     <textarea placeholder="Why do you want mentorship?" value={requestMessage} onChange={e => setRequestMessage(e.target.value)} className="w-full glass-input px-4 py-3 rounded-2xl focus:outline-none resize-none h-24 text-[12px]" />

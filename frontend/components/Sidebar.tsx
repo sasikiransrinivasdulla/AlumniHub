@@ -16,6 +16,7 @@ import {
   triggerEventTest,
   NotificationDto,
 } from "@/services/notificationService";
+import { useModal } from "@/hooks/useModal";
 
 interface SidebarProps {
   user: UserProfile | null;
@@ -36,6 +37,9 @@ export default function Sidebar({ user }: SidebarProps) {
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useModal(activeDrawer !== null, () => setActiveDrawer(null), drawerRef);
 
   const loadNotificationsData = async () => {
     setNotificationsLoading(true);
@@ -532,6 +536,10 @@ export default function Sidebar({ user }: SidebarProps) {
               className="fixed inset-0 bg-black/75 backdrop-blur-[26px] z-30 ml-20 md:ml-72"
             />
             <motion.div
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={activeDrawer === "notifications" ? "Notification Center" : "Search Alumni"}
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}

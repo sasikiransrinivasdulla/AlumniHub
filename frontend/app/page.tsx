@@ -40,22 +40,22 @@ export default function Login() {
   const features = [
     {
       title: "Smart Discovery",
-      desc: "Connect with classmates filtering by company, batch, position, city, or skills.",
+      desc: "Find alumni by batch, department, company, city, skills, or profession.",
       icon: "🔍"
     },
     {
-      title: "Video Memories",
-      desc: "Share high-resolution college memory pictures and video files up to 30MB.",
+      title: "Rich Memories",
+      desc: "Relive college moments through photos and videos shared by your alumni community.",
       icon: "🎥"
     },
     {
-      title: "Granular Privacy",
-      desc: "Control who sees your milestones, timeline, bio, and contact information.",
+      title: "Privacy First",
+      desc: "Control exactly who can view your profile, memories, and contact information.",
       icon: "🔒"
     },
     {
-      title: "Instant Alerts",
-      desc: "Real-time WebSocket alerts and native browser notifications for inbox updates.",
+      title: "Stay Connected",
+      desc: "Receive real-time notifications, chat instantly, and never miss important alumni updates.",
       icon: "🔔"
     }
   ];
@@ -82,16 +82,16 @@ export default function Login() {
                   priority
                 />
               </div>
-              <span className="text-[14px] font-bold tracking-[0.25em] text-neutral-450 uppercase">VASAVI CSE PORTAL</span>
+              <span className="text-[14px] font-bold tracking-[0.25em] text-neutral-450 uppercase">SRI VASAVI ALUMNI HUB</span>
             </div>
             
             <h1 className="text-[32px] md:text-[42px] font-extralight tracking-tight text-white leading-tight uppercase">
-              RECONNECT WITH YOUR <br />
-              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60">ACADEMIC COMMUNITY</span>
+              WHERE EVERY VASAVI <br />
+              <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/60">JOURNEY CONTINUES</span>
             </h1>
             
             <p className="text-[14px] font-light text-neutral-400 max-w-lg leading-relaxed">
-              Alumni Hub is an enterprise-grade open source networking platform designed for Vasavi CSE graduates to share memories, stay In-Touch, and grow together.
+              Alumni Hub is a secure networking platform built exclusively for Sri Vasavi Engineering College alumni. Reconnect with classmates across every department, share memories, grow your professional network, discover opportunities, and stay In-Touch throughout your career.
             </p>
           </div>
 
@@ -134,7 +134,7 @@ export default function Login() {
                 ALUMNI HUB
               </h2>
               <p className="text-neutral-455 text-[10px] tracking-[0.2em] uppercase font-light">
-                Secure Authentication Gateway
+                Your Alumni Community Awaits
               </p>
             </div>
 
@@ -159,7 +159,7 @@ export default function Login() {
 
             <div className="border-t border-white/5 pt-4 w-full">
               <p className="text-[10px] text-neutral-500 uppercase tracking-widest leading-relaxed">
-                Authorized access only. By continuing, you agree to our community standards.
+                Secure access for verified alumni. By signing in, you agree to connect respectfully within our community.
               </p>
             </div>
           </motion.div>
