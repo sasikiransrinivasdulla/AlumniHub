@@ -9,11 +9,8 @@ import Image from "next/image";
 import Sidebar from "@/components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { requestCache } from "@/services/cacheService";
+import { BATCH_OPTIONS, DEPARTMENT_OPTIONS } from "@/constants/profileConstants";
 
-const BATCH_OPTIONS = [
-  "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028"
-];
-const DEPARTMENT_OPTIONS = ["CST", "CSE", "ECE", "ECT", "AIML", "CAI", "EEE", "MECH", "CIVIL"];
 const SECTION_OPTIONS = ["A", "B", "C", "D"];
 
 export default function Directory() {
@@ -139,9 +136,42 @@ export default function Directory() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-[15px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse font-light">Loading Classmate directory...</p>
-      </main>
+      <div className="h-screen bg-black text-white flex overflow-hidden">
+        <div className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel border-y-0 border-l-0" />
+        <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col">
+          <div className="w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-6">
+            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <div className="space-y-2">
+                <div className="h-5 w-40 bg-white/[0.06] rounded-lg animate-pulse" />
+                <div className="h-3 w-48 bg-white/[0.04] rounded animate-pulse" />
+              </div>
+              <div className="h-9 w-28 bg-white/[0.06] rounded-full animate-pulse" />
+            </div>
+            <div className="h-12 bg-white/[0.04] rounded-full animate-pulse" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="glass-panel rounded-2xl p-5 animate-pulse">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-full bg-white/[0.06]" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3.5 w-32 bg-white/[0.06] rounded" />
+                      <div className="h-2.5 w-20 bg-white/[0.04] rounded" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-2.5 w-full bg-white/[0.04] rounded" />
+                    <div className="h-2.5 w-3/4 bg-white/[0.04] rounded" />
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <div className="h-8 flex-1 bg-white/[0.04] rounded-full" />
+                    <div className="h-8 flex-1 bg-white/[0.04] rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -150,7 +180,7 @@ export default function Directory() {
   const activeChips = Object.entries(filters).filter(([key, val]) => val && key !== "q");
 
   return (
-    <div className="min-h-screen bg-black text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white flex overflow-hidden">
       <Sidebar user={currentUser} />
 
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
@@ -161,7 +191,9 @@ export default function Directory() {
           <div className="flex justify-between items-center border-b border-white/5 pb-4">
             <div>
               <h1 className="text-[20px] md:text-[22px] font-light tracking-[0.15em] uppercase text-white leading-tight">Alumni Directory</h1>
-              <p className="text-[12px] tracking-wider text-neutral-450 mt-1.5 uppercase">Discover & Connect with Classmates</p>
+              <p className="text-[12px] tracking-wider text-neutral-450 mt-1.5 uppercase">
+                {directoryLoading ? "Searching..." : `${alumniList.length} classmate${alumniList.length === 1 ? "" : "s"} found`}
+              </p>
             </div>
             <button
               onClick={() => setShowDrawer(true)}

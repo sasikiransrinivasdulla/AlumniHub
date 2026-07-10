@@ -44,12 +44,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+        log.warn("Handled IllegalStateException: {}", ex.getMessage());
+        ErrorResponse response = ErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .code("CONFLICT")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex) {
         log.error("Handled unexpected server exception: {}", ex.getMessage(), ex);
         ErrorResponse response = ErrorResponse.builder()
                 .success(false)
-                .message("Unable to send In-Touch request. Please try again.")
+                .message("Something went wrong. Please try again.")
                 .code("SERVER_ERROR")
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

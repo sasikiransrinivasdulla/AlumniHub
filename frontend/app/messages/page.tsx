@@ -412,7 +412,7 @@ function MessagesContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white flex overflow-hidden">
       {/* Sidebar navigation */}
       <Sidebar user={currentUser} />
 

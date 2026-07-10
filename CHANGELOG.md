@@ -4,7 +4,36 @@ All notable changes to the **Alumni Hub** ecosystem will be documented in this f
 
 ---
 
+## [3.0.1] - 2026-07-10 — Production Stabilization Sprint
+
+### Performance
+- **Backend**: Eliminated N+1 write storm in `AlumniService.searchVisibleAlumniWithFilters()` — replaced per-row `save()` with a single batch JPQL `UPDATE` for `searchAppearances` increment.
+- **Recommendations**: Rewrote `getPeopleYouMayKnow()` with corrected scoring weights (batch+dept=5, batch+section=3, city=2, company=2, mutual connections=3×N, skills=1 each). Only users with `score > 0` are now recommended, eliminating random zero-score suggestions.
+
+### Bug Fixes
+- **Contact Request Errors**: `ContactRequestService` previously threw `IllegalStateException` for duplicate/pending scenarios, which fell through to the generic `Exception` handler returning 500 `SERVER_ERROR`. Now throws `InTouchException` with codes (`ALREADY_CONNECTED`, `REQUEST_PENDING`, `SELF_REQUEST`, `INVALID_REQUEST`) for all edge cases.
+- **`GlobalExceptionHandler`**: Added explicit `IllegalStateException` handler (returns 409 Conflict). Fixed generic 500 message from hard-coded "Unable to send In-Touch request" to "Something went wrong. Please try again."
+- **CSS `z-55`**: Fixed invalid Tailwind class `z-55` in `alumni/[id]/page.tsx` to the valid arbitrary-value syntax `z-[55]`. The toast component was silently failing to apply its z-index.
+
+### UX & Loading
+- **Skeleton Loaders**: Replaced all plain text loading spinners with rich skeleton loaders on Dashboard (header + composer + 3 post cards), Directory (header + 6 profile card grid), and Alumni Profile (breadcrumb + profile card + skills block).
+- **Directory Result Count**: Added "N classmates found" / "Searching..." live indicator below the page title so users understand the scope of results.
+- **Admission Batch Label + Tooltip**: Renamed "Batch" field to "Admission Batch" with an ⓘ info tooltip in both `edit/page.tsx` and `profile/setup/page.tsx`.
+
+### Layout / Scrolling
+- Fixed scroll containment: `html { height: 100%; }` and `body { height: 100%; overflow: hidden; }` now ensure the sidebar stays fixed and only the content area scrolls.
+- All authenticated pages updated from `min-h-screen` to `h-screen` outer container for consistent viewport fill.
+
+### Code Quality
+- Created **`/frontend/constants/profileConstants.ts`** as single source of truth for `BATCH_OPTIONS` (auto-generated 2010–2030), `DEPARTMENT_OPTIONS`, `SECTION_MAPPING`, and `ADMISSION_BATCH_TOOLTIP`.
+- Removed duplicate constant definitions from `edit/page.tsx`, `profile/setup/page.tsx`, and `directory/page.tsx`.
+- Removed debug "Simulate Notifications" panel and dead `triggerReunionTest`/`triggerEventTest` handler functions from `Sidebar.tsx`.
+- Added `@Slf4j` logging to `ContactRequestService` for production diagnostics.
+
+---
+
 ## [3.0.0] - 2026-07-06
+
 
 ### Added
 - **Events Module**: Full event scheduling system for reunions, webinars, and lectures with capacity constraints and RSVP tracking.

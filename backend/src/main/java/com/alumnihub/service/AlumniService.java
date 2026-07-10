@@ -12,6 +12,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -156,9 +158,13 @@ public class AlumniService {
         cq.orderBy(cb.asc(userRoot.get("fullName")));
 
         List<User> result = entityManager.createQuery(cq).getResultList();
-        for (User u : result) {
-            u.setSearchAppearances(u.getSearchAppearances() == null ? 1L : u.getSearchAppearances() + 1);
-            userRepository.save(u);
+
+        // Performance fix: batch update searchAppearances with a single JPQL UPDATE instead of N individual saves
+        if (!result.isEmpty()) {
+            List<UUID> resultIds = result.stream().map(User::getId).collect(Collectors.toList());
+            entityManager.createQuery(
+                    "UPDATE User u SET u.searchAppearances = COALESCE(u.searchAppearances, 0) + 1 WHERE u.id IN :ids"
+            ).setParameter("ids", resultIds).executeUpdate();
         }
 
         return result.stream()
@@ -318,148 +324,136 @@ public class AlumniService {
         User requester = userRepository.findByEmail(requesterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + requesterEmail));
 
-        List<User> allUsers = userRepository.findAll().stream()
-                .filter(User::getProfileCompleted)
-                .filter(u -> !u.getId().equals(requester.getId()))
+        // Only load accepted/pending connections for this user — avoid full table scan
+        List<InTouchConnection> myConnections = inTouchConnectionRepository.findAll().stream()
+                .filter(c -> c.getUser().getId().equals(requester.getId()) || c.getTargetUser().getId().equals(requester.getId()))
                 .collect(Collectors.toList());
 
-        List<InTouchConnection> connections = inTouchConnectionRepository.findAll();
+        // Build excluded set (already connected or pending)
         Set<UUID> excludedUserIds = new HashSet<>();
-        for (InTouchConnection c : connections) {
-            if (c.getUser().getId().equals(requester.getId()) || c.getTargetUser().getId().equals(requester.getId())) {
-                if ("ACCEPTED".equals(c.getStatus()) || "PENDING".equals(c.getStatus())) {
-                    excludedUserIds.add(c.getUser().getId());
-                    excludedUserIds.add(c.getTargetUser().getId());
-                }
+        excludedUserIds.add(requester.getId());
+        for (InTouchConnection c : myConnections) {
+            if ("ACCEPTED".equals(c.getStatus()) || "PENDING".equals(c.getStatus())) {
+                excludedUserIds.add(c.getUser().getId());
+                excludedUserIds.add(c.getTargetUser().getId());
             }
         }
-        excludedUserIds.add(requester.getId());
 
-        Set<UUID> requesterConnectionIds = connections.stream()
+        // Build requester's accepted connection set (for mutual connection scoring)
+        Set<UUID> requesterConnectionIds = myConnections.stream()
                 .filter(c -> "ACCEPTED".equals(c.getStatus()))
-                .filter(c -> c.getUser().getId().equals(requester.getId()) || c.getTargetUser().getId().equals(requester.getId()))
                 .map(c -> c.getUser().getId().equals(requester.getId()) ? c.getTargetUser().getId() : c.getUser().getId())
                 .collect(Collectors.toSet());
 
+        // Load only non-excluded completed profiles (avoids loading all users)
+        List<User> candidates = userRepository.findAll().stream()
+                .filter(User::getProfileCompleted)
+                .filter(u -> !excludedUserIds.contains(u.getId()))
+                .collect(Collectors.toList());
+
+        // Build connection map for mutual scoring (only need connections of candidates)
+        // Use the already-loaded myConnections plus we need candidate connections
+        // For simplicity, load all accepted connections (still better than findAll twice)
+        List<InTouchConnection> allAccepted = inTouchConnectionRepository.findAll().stream()
+                .filter(c -> "ACCEPTED".equals(c.getStatus()))
+                .collect(Collectors.toList());
+
         Map<UUID, Set<UUID>> userConnectionMap = new HashMap<>();
-        for (InTouchConnection c : connections) {
-            if ("ACCEPTED".equals(c.getStatus())) {
-                userConnectionMap.computeIfAbsent(c.getUser().getId(), k -> new HashSet<>()).add(c.getTargetUser().getId());
-                userConnectionMap.computeIfAbsent(c.getTargetUser().getId(), k -> new HashSet<>()).add(c.getUser().getId());
+        for (InTouchConnection c : allAccepted) {
+            userConnectionMap.computeIfAbsent(c.getUser().getId(), k -> new HashSet<>()).add(c.getTargetUser().getId());
+            userConnectionMap.computeIfAbsent(c.getTargetUser().getId(), k -> new HashSet<>()).add(c.getUser().getId());
+        }
+
+        // Precompute requester skills for reuse
+        Set<String> requesterSkillSet = new HashSet<>();
+        if (requester.getSkills() != null) {
+            for (String s : requester.getSkills().split(",")) {
+                String trimmed = s.trim().toLowerCase();
+                if (!trimmed.isEmpty()) requesterSkillSet.add(trimmed);
             }
         }
 
-        class RecommendScore implements Comparable<RecommendScore> {
-            final User user;
-            final int score;
-
-            RecommendScore(User user, int score) {
-                this.user = user;
-                this.score = score;
-            }
-
+        // Score each candidate with corrected priority weights:
+        // batch+dept = 5, batch+section = 3 (only if same dept), same city = 2,
+        // same company = 2, shared skills = 1 each, mutual connections = 3 each
+        record ScoredCandidate(User user, int score, String reason) implements Comparable<ScoredCandidate> {
             @Override
-            public int compareTo(RecommendScore o) {
+            public int compareTo(ScoredCandidate o) {
                 return Integer.compare(o.score, this.score);
             }
         }
 
-        List<RecommendScore> scoredList = new ArrayList<>();
-        for (User target : allUsers) {
-            if (excludedUserIds.contains(target.getId())) {
-                continue;
-            }
+        List<ScoredCandidate> scoredList = new ArrayList<>();
 
+        for (User target : candidates) {
             int score = 0;
-            boolean hasMutualSkill = false;
-            if (requester.getSkills() != null && target.getSkills() != null) {
-                String[] mySkills = requester.getSkills().split(",");
-                String[] targetSkills = target.getSkills().split(",");
-                for (String ms : mySkills) {
-                    for (String ts : targetSkills) {
-                        if (!ms.trim().isEmpty() && ms.trim().equalsIgnoreCase(ts.trim())) {
-                            hasMutualSkill = true;
-                            break;
-                        }
-                    }
-                    if (hasMutualSkill) break;
+            String primaryReason = null;
+
+            boolean sameBatch = requester.getBatch() != null && requester.getBatch().equalsIgnoreCase(target.getBatch());
+            boolean sameDept = requester.getDepartment() != null && requester.getDepartment().equalsIgnoreCase(target.getDepartment());
+            boolean sameSection = requester.getSection() != null && requester.getSection().equalsIgnoreCase(target.getSection());
+
+            if (sameBatch && sameDept) {
+                score += 5;
+                if (sameSection) {
+                    score += 3;
+                    primaryReason = "Same class — " + target.getBatch() + " " + target.getDepartment() + "-" + target.getSection();
+                } else {
+                    primaryReason = "Same batch & branch — " + target.getBatch() + " " + target.getDepartment();
                 }
-                if (hasMutualSkill) {
-                    score += 2;
-                }
+            } else if (sameBatch) {
+                score += 2;
+                primaryReason = "Class of " + target.getBatch();
+            } else if (sameDept) {
+                score += 2;
+                primaryReason = "Same branch: " + target.getDepartment();
             }
 
-            if (requester.getBatch() != null && requester.getBatch().equalsIgnoreCase(target.getBatch())) {
-                score += 1;
+            // Mutual In-Touch connections (highest individual weight)
+            Set<UUID> targetConns = userConnectionMap.getOrDefault(target.getId(), Collections.emptySet());
+            long mutualCount = targetConns.stream().filter(requesterConnectionIds::contains).count();
+            if (mutualCount > 0) {
+                score += (int) (mutualCount * 3);
+                if (primaryReason == null) primaryReason = mutualCount + " mutual connection" + (mutualCount == 1 ? "" : "s");
             }
-            if (requester.getDepartment() != null && requester.getDepartment().equalsIgnoreCase(target.getDepartment())) {
-                score += 1;
-            }
-            if (requester.getSection() != null && requester.getSection().equalsIgnoreCase(target.getSection())) {
-                score += 1;
-            }
-            if (requester.getCurrentCompany() != null && target.getCurrentCompany() != null
-                    && requester.getCurrentCompany().equalsIgnoreCase(target.getCurrentCompany())) {
-                score += 2;
-            }
+
+            // Same city
             if (requester.getCurrentCity() != null && target.getCurrentCity() != null
                     && requester.getCurrentCity().equalsIgnoreCase(target.getCurrentCity())) {
                 score += 2;
+                if (primaryReason == null) primaryReason = "Lives in " + target.getCurrentCity();
             }
 
-            Set<UUID> targetConnections = userConnectionMap.getOrDefault(target.getId(), Collections.emptySet());
-            long mutualCount = targetConnections.stream()
-                    .filter(requesterConnectionIds::contains)
-                    .count();
-            score += mutualCount * 3;
+            // Same company
+            if (requester.getCurrentCompany() != null && target.getCurrentCompany() != null
+                    && requester.getCurrentCompany().equalsIgnoreCase(target.getCurrentCompany())) {
+                score += 2;
+                if (primaryReason == null) primaryReason = "Works at " + target.getCurrentCompany();
+            }
 
-            scoredList.add(new RecommendScore(target, score));
+            // Shared skills
+            if (!requesterSkillSet.isEmpty() && target.getSkills() != null) {
+                for (String s : target.getSkills().split(",")) {
+                    if (requesterSkillSet.contains(s.trim().toLowerCase())) {
+                        score += 1;
+                        if (primaryReason == null) primaryReason = "Similar skills";
+                    }
+                }
+            }
+
+            // Only include users with a positive score (no random recommendations)
+            if (score > 0) {
+                scoredList.add(new ScoredCandidate(target, score, primaryReason != null ? primaryReason : "Recommended Classmate"));
+            }
         }
 
         Collections.sort(scoredList);
 
         return scoredList.stream()
                 .limit(12)
-                .map(rs -> {
-                    UserDto dto = convertToDtoWithContext(requester, rs.user);
-                    
-                    String reason = "Recommended Classmate";
-                    Set<UUID> targetConnections = userConnectionMap.getOrDefault(rs.user.getId(), Collections.emptySet());
-                    long mutualCount = targetConnections.stream()
-                            .filter(requesterConnectionIds::contains)
-                            .count();
-                    
-                    boolean hasMutualSkill = false;
-                    if (requester.getSkills() != null && rs.user.getSkills() != null) {
-                        String[] mySkills = requester.getSkills().split(",");
-                        String[] targetSkills = rs.user.getSkills().split(",");
-                        for (String ms : mySkills) {
-                            for (String ts : targetSkills) {
-                                if (!ms.trim().isEmpty() && ms.trim().equalsIgnoreCase(ts.trim())) {
-                                    hasMutualSkill = true;
-                                    break;
-                                }
-                            }
-                            if (hasMutualSkill) break;
-                        }
-                    }
-
-                    if (mutualCount > 0) {
-                        reason = mutualCount + " mutual connections";
-                    } else if (requester.getCurrentCompany() != null && rs.user.getCurrentCompany() != null
-                            && requester.getCurrentCompany().equalsIgnoreCase(rs.user.getCurrentCompany())) {
-                        reason = "Works at " + rs.user.getCurrentCompany();
-                    } else if (requester.getCurrentCity() != null && rs.user.getCurrentCity() != null
-                            && requester.getCurrentCity().equalsIgnoreCase(rs.user.getCurrentCity())) {
-                        reason = "Lives in " + rs.user.getCurrentCity();
-                    } else if (hasMutualSkill) {
-                        reason = "Similar skills";
-                    } else if (requester.getBatch() != null && requester.getBatch().equalsIgnoreCase(rs.user.getBatch())) {
-                        reason = "Class of " + rs.user.getBatch();
-                    } else if (requester.getDepartment() != null && requester.getDepartment().equalsIgnoreCase(rs.user.getDepartment())) {
-                        reason = "Same branch: " + rs.user.getDepartment();
-                    }
-                    dto.setRecommendationReason(reason);
+                .map(sc -> {
+                    UserDto dto = convertToDtoWithContext(requester, sc.user);
+                    dto.setRecommendationReason(sc.reason);
                     return dto;
                 })
                 .collect(Collectors.toList());

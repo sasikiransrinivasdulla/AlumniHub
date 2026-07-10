@@ -215,9 +215,47 @@ export default function AlumniProfile({ params }: PageProps) {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        <p className="text-[15px] tracking-[0.2em] uppercase text-neutral-500 animate-pulse">Loading Profile...</p>
-      </main>
+      <div className="h-screen bg-black text-white flex overflow-hidden">
+        <div className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel border-y-0 border-l-0" />
+        <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col">
+          <div className="w-full max-w-2xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-6">
+            {/* Breadcrumb skeleton */}
+            <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <div className="h-4 w-32 bg-white/[0.06] rounded animate-pulse" />
+              <div className="h-4 w-28 bg-white/[0.04] rounded animate-pulse" />
+            </div>
+            {/* Profile card skeleton */}
+            <div className="glass-panel p-6 md:p-10 rounded-[20px] animate-pulse">
+              <div className="flex items-center gap-5 mb-6">
+                <div className="w-20 h-20 rounded-full bg-white/[0.06] flex-shrink-0" />
+                <div className="space-y-3 flex-1">
+                  <div className="h-5 w-48 bg-white/[0.06] rounded" />
+                  <div className="h-3 w-36 bg-white/[0.04] rounded" />
+                  <div className="h-3 w-24 bg-white/[0.04] rounded" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="h-3 w-full bg-white/[0.04] rounded" />
+                <div className="h-3 w-5/6 bg-white/[0.04] rounded" />
+                <div className="h-3 w-4/6 bg-white/[0.04] rounded" />
+              </div>
+              <div className="mt-6 flex gap-3">
+                <div className="h-10 flex-1 bg-white/[0.06] rounded-full" />
+                <div className="h-10 flex-1 bg-white/[0.04] rounded-full" />
+              </div>
+            </div>
+            {/* Skills skeleton */}
+            <div className="glass-panel p-6 rounded-[20px] animate-pulse">
+              <div className="h-4 w-20 bg-white/[0.06] rounded mb-4" />
+              <div className="flex flex-wrap gap-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className="h-7 w-20 bg-white/[0.04] rounded-full" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -243,7 +281,7 @@ export default function AlumniProfile({ params }: PageProps) {
   if (!alumni) return null;
 
   return (
-    <div className="min-h-screen bg-black text-white flex overflow-hidden">
+    <div className="h-screen bg-black text-white flex overflow-hidden">
       <Sidebar user={currentUser} />
 
       <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
@@ -596,7 +634,7 @@ export default function AlumniProfile({ params }: PageProps) {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className={`fixed bottom-6 right-6 z-55 flex items-center gap-3 px-5 py-3.5 rounded-2xl border backdrop-blur-[20px] shadow-2xl ${
+            className={`fixed bottom-6 right-6 z-[55] flex items-center gap-3 px-5 py-3.5 rounded-2xl border backdrop-blur-[20px] shadow-2xl ${
               toast.type === "success"
                 ? "bg-emerald-950/80 border-emerald-500/20 text-emerald-400"
                 : toast.type === "error"

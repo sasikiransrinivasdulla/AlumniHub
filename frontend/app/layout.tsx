@@ -48,7 +48,7 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-black text-white relative">
+      <body className="h-full flex flex-col bg-black text-white relative overflow-hidden">
         <CursorTrail />
         {/* Giant Background Watermark */}
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">

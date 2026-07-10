@@ -5,26 +5,13 @@ import { useRouter } from "next/navigation";
 import { getUserProfile, updateUserProfile, clearAuth, UserProfile } from "@/services/authService";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import {
+  BATCH_OPTIONS,
+  DEPARTMENT_OPTIONS,
+  SECTION_MAPPING,
+  ADMISSION_BATCH_TOOLTIP,
+} from "@/constants/profileConstants";
 
-const BATCH_OPTIONS = [
-  "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027", "2028"
-];
-
-const DEPARTMENT_OPTIONS = [
-  "CSE", "CST", "ECE", "EEE", "MECH", "CIVIL", "IT", "AIML", "CAI"
-];
-
-const SECTION_MAPPING: Record<string, string[]> = {
-  CSE: ["A", "B", "C"],
-  ECE: ["A", "B", "C"],
-  IT: ["A", "B", "C"],
-  EEE: ["A", "B"],
-  MECH: ["A", "B"],
-  CIVIL: ["A", "B"],
-  CST: [],
-  AIML: [],
-  CAI: []
-};
 
 export default function ProfileSetup() {
   const router = useRouter();
@@ -261,7 +248,15 @@ export default function ProfileSetup() {
             {/* Dropdown selectors */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <label className="text-[10px] tracking-widest uppercase text-neutral-455 block font-bold">Batch *</label>
+                <label className="text-[10px] tracking-widest uppercase text-neutral-455 block font-bold flex items-center gap-1.5">
+                  Admission Batch *
+                  <span
+                    title={ADMISSION_BATCH_TOOLTIP}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-white/20 text-[9px] text-neutral-400 cursor-help hover:border-white/50 hover:text-white transition-colors"
+                  >
+                    i
+                  </span>
+                </label>
                 <select
                   value={batch}
                   onChange={(e) => setBatch(e.target.value)}

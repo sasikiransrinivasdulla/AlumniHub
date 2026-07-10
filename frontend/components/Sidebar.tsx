@@ -12,8 +12,6 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
   deleteNotification,
-  triggerReunionTest,
-  triggerEventTest,
   NotificationDto,
 } from "@/services/notificationService";
 import { useModal } from "@/hooks/useModal";
@@ -184,24 +182,6 @@ export default function Sidebar({ user }: SidebarProps) {
       router.push("/profile");
     } else {
       router.push("/dashboard");
-    }
-  };
-
-  const handleTriggerReunion = async () => {
-    try {
-      await triggerReunionTest();
-      await loadNotificationsData();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleTriggerEvent = async () => {
-    try {
-      await triggerEventTest();
-      await loadNotificationsData();
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -588,25 +568,7 @@ export default function Sidebar({ user }: SidebarProps) {
                     )}
                   </div>
 
-                  {/* Mock triggers for testing & demonstration */}
-                  <div className="border-t border-white/5 pt-4 space-y-2">
-                    <span className="text-[10px] font-bold text-neutral-550 uppercase tracking-widest block">Simulate Notifications</span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleTriggerReunion}
-                        className="flex-1 py-2 border border-white/10 hover:bg-white/5 text-[10px] font-semibold tracking-wider uppercase text-neutral-300 hover:text-white rounded-full cursor-pointer transition-colors"
-                      >
-                        + Reunion Invitation
-                      </button>
-                      <button
-                        onClick={handleTriggerEvent}
-                        className="flex-1 py-2 border border-white/10 hover:bg-white/5 text-[10px] font-semibold tracking-wider uppercase text-neutral-300 hover:text-white rounded-full cursor-pointer transition-colors"
-                      >
-                        + Event Reminder
-                      </button>
-                    </div>
-                  </div>
-                  
+
                   <button
                     onClick={() => setActiveDrawer(null)}
                     className="w-full text-[12px] font-bold tracking-widest uppercase border border-white/10 hover:border-white py-3 transition-colors duration-200 rounded-full cursor-pointer text-center"
