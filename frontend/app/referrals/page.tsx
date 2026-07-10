@@ -84,7 +84,7 @@ export default function ReferralsPage() {
                   {ref.experienceRequired && <p className="text-[11px] text-neutral-400">Experience: {ref.experienceRequired}</p>}
                   {ref.salaryRange && <p className="text-[11px] text-neutral-400">Range: {ref.salaryRange}</p>}
                   {ref.requirements && <p className="text-[12px] text-neutral-400 font-light leading-relaxed line-clamp-2">{ref.requirements}</p>}
-                  {ref.deadline && <p className="text-[10px] text-neutral-500">Deadline: {new Date(ref.deadline).toLocaleDateString()}</p>}
+                  {ref.deadline && <p suppressHydrationWarning className="text-[10px] text-neutral-500">Deadline: {new Date(ref.deadline).toLocaleDateString()}</p>}
                   <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Posted by {ref.creatorName}</p>
                   <div className="flex gap-2 pt-2">
                     <button onClick={() => setShowApply(ref.id)} className="flex-1 py-2 bg-white text-black text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-neutral-200 cursor-pointer">Apply</button>

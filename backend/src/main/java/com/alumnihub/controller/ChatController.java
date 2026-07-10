@@ -31,6 +31,14 @@ public class ChatController {
         return ResponseEntity.ok(conversation);
     }
 
+    @GetMapping("/conversations/{id}")
+    public ResponseEntity<ConversationDto> getConversation(
+            Principal principal,
+            @PathVariable("id") UUID conversationId) {
+        ConversationDto conversation = chatService.getConversationDto(conversationId, principal.getName());
+        return ResponseEntity.ok(conversation);
+    }
+
     @GetMapping("/conversations")
     public ResponseEntity<List<ConversationDto>> getConversations(Principal principal) {
         List<ConversationDto> list = chatService.getConversations(principal.getName());

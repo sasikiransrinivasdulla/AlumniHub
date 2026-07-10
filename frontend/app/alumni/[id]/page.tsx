@@ -351,7 +351,7 @@ export default function AlumniProfile({ params }: PageProps) {
                   {/* In-Touch Button Logic */}
                   {alumni.inTouchStatus === "ACCEPTED" && (
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-neutral-400 font-light italic">
+                      <span suppressHydrationWarning className="text-[11px] text-neutral-400 font-light italic">
                         ✓ In-Touch {alumni.inTouchConnectedSince && `since ${new Date(alumni.inTouchConnectedSince).toLocaleDateString([], { month: "short", year: "numeric" })}`}
                       </span>
                       <button

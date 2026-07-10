@@ -95,8 +95,8 @@ function MessagesContent() {
           } else {
             // Fetch conversation directly if not in list
             try {
-              const { getOrCreateConversation } = await import("@/services/chatService");
-              const targetUserConv = await getOrCreateConversation(queryConversationId);
+              const { getConversation } = await import("@/services/chatService");
+              const targetUserConv = await getConversation(queryConversationId);
               setActiveConversation(targetUserConv);
               setConversations((prev) => {
                 const updated = [targetUserConv, ...prev.filter(c => c.id !== targetUserConv.id)];
@@ -480,7 +480,7 @@ function MessagesContent() {
                             {c.participant.fullName}
                           </h4>
                           {c.lastMessageTime && (
-                            <span className="text-[11px] text-neutral-500 font-light flex-shrink-0 ml-2">
+                            <span suppressHydrationWarning className="text-[11px] text-neutral-500 font-light flex-shrink-0 ml-2">
                               {new Date(c.lastMessageTime).toLocaleDateString([], { month: "short", day: "numeric" })}
                             </span>
                           )}
@@ -634,7 +634,7 @@ function MessagesContent() {
                               </div>
                               
                               {/* Small details below bubble (Timestamp) */}
-                              <span className="text-[10px] text-neutral-500 font-light mt-1 self-end px-1 select-none">
+                              <span suppressHydrationWarning className="text-[10px] text-neutral-500 font-light mt-1 self-end px-1 select-none">
                                 {formatTime(m.createdAt)}
                               </span>
                             </div>

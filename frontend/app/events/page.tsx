@@ -118,7 +118,7 @@ export default function EventsPage() {
                   <h3 className="text-[15px] font-semibold text-white uppercase tracking-wider">{event.title}</h3>
                   <p className="text-[12px] text-neutral-400 font-light leading-relaxed line-clamp-2">{event.description}</p>
                   <div className="flex items-center gap-3 text-[10px] text-neutral-500 uppercase tracking-wider">
-                    <span>{formatDate(event.startDate)}</span>
+                    <span suppressHydrationWarning>{formatDate(event.startDate)}</span>
                     {event.location && <span>• {event.location}</span>}
                   </div>
                   <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Organized by {event.organizerName}</p>

@@ -4,6 +4,22 @@ All notable changes to the **Alumni Hub** ecosystem will be documented in this f
 
 ---
 
+## [3.0.2] - 2026-07-10 — Final Stabilization & Polish
+
+### Added
+- **Get Conversation Endpoint**: Added GET `/api/chat/conversations/{id}` to allow clients to query metadata of specific chats by ID.
+- **Database Composite Indexes**: Added high-performance indexes `idx_messages_conversation_created` on messages, `idx_notifications_recipient_created` on notifications, and `idx_comments_post_created` on comments.
+
+### Bug Fixes
+- **Conversation Load**: Solved critical bug in `/messages` where direct URL navigation with `conversationId` threw a `400 Bad Request` by replacing the incorrect user lookup with the new `getConversation` retrieval utility.
+- **Next.js Hydration Mismatch**: Added `suppressHydrationWarning` to date formats across dashboard, directory, alumni profiles, events, messages, reunions, achievements, and notifications to silent React console warnings on client-side hydration.
+
+### Documentation
+- Completely redesigned project documentation inside `docs/` and root `README.md`.
+- Created specific documents for backend/frontend architecture, database schema with ER diagrams, authentication workflows, websocket STOMP protocols, production deployments, security verifications, performance policies, directory project mappings, and dev guide.
+
+---
+
 ## [3.0.1] - 2026-07-10 — Production Stabilization Sprint
 
 ### Performance

@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "comments")
+@Table(name = "comments", indexes = {
+    @Index(name = "idx_comments_post_created", columnList = "post_id, created_at DESC")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

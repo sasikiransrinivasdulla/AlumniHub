@@ -1,98 +1,50 @@
-# Developer Walkthrough
+# Verification Walkthrough & Testing Guide
 
-This document guides developers through setting up, compiling, testing, and running the **Alumni Hub** project.
-
----
-
-## 🛠️ Step-by-Step Local Setup
-
-### 1. Repository Clone
-Ensure the project is cloned locally:
-```bash
-git clone https://github.com/sasikiransrinivasdulla/AlumniHub.git
-cd AlumniHub
-```
-
-### 2. Database Provisioning
-This application utilizes a PostgreSQL database. Ensure you have a PostgreSQL connection string ready. If using **Neon DB**:
-- Obtain the database URL (e.g. `postgresql://user:pass@ep-shiny-shadow.aws.neon.tech/neondb?sslmode=require`).
-- The application dynamically parses the `DATABASE_URL` at startup into JDBC attributes.
-
-### 3. Backend Setup
-1. Enter the backend folder:
-   ```bash
-   cd backend
-   ```
-2. Create your `.env` configuration file from the template:
-   ```bash
-   cp .env.example .env
-   ```
-3. Open `.env` and fill in the database URL, JWT secret key, and Firebase Admin credentials.
-4. Clean and compile the Java sources:
-   ```bash
-   ./mvnw clean compile
-   ```
-
-### 4. Frontend Setup
-1. Enter the frontend folder:
-   ```bash
-   cd ../frontend
-   ```
-2. Create your `.env.local` configuration file:
-   ```bash
-   cp .env.example .env.local
-   ```
-3. Open `.env.local` and configure your backend endpoint API URL and Firebase Web credentials.
-4. Install npm dependencies:
-   ```bash
-   npm install
-   ```
+This document guides you through verifying the final production stabilization fixes made to Alumni Hub.
 
 ---
 
-## 🧪 Running the Test Suites
+## 🛠️ Verification Commands
 
-### Backend Unit & Integration Tests
-We have built integration tests utilizing Mockito to simulate OAuth flow without querying live Google endpoints.
-Run the test phase:
+Ensure both platforms compile and compile/bundle without error:
+
+### 1. Backend Compilation Check
+Navigate to the backend directory and run:
 ```bash
 cd backend
-./mvnw test
+./mvnw clean compile
 ```
-The test suite performs the following validations:
-- **`AlumniHubApplicationTests.contextLoads`**: Assures Hibernate, Hikari, PostgreSQL connection drivers, and Firebase configurations load successfully.
-- **`AuthControllerTest`**: Mocks the Firebase Admin SDK token decryption, verifies dynamic user creation in PostgreSQL, resolves the onboarding status to `PENDING_ONBOARDING`, and verifies the JWT token return structure.
-- **`UserControllerTest`**: Tests profile fetching (`GET /api/user/me`), success path profile updates (`PUT /api/user/me`), inputs validation enforcement (such as exactly 10-digit phone numbers, max 250-character bio length, valid LinkedIn and GitHub URL patterns, trailing slashes, conditional GitHub requirement checks based on selected department, and new Instagram URL validations), and unauthenticated endpoint rejection.
-- **`PostControllerTest`**: Asserts post creation (`POST /api/posts`), academic community filtering for custom feed displays (`GET /api/posts/feed`), and detail-level visibility enforcement (`GET /api/posts/{id}`) returning 403 Forbidden for unauthorized requests.
-- **`LikeCommentControllerTest`**: Asserts likes toggling behavior, comment submission, character length constraints, and comment deletion restricted to comment owners.
-- **`AlumniControllerTest`**: Asserts community-restricted directory listings (`GET /api/alumni`), name/position directory searches (`GET /api/alumni/search`), and target detailed profile checks returning 403 Forbidden for out-of-community requests.
+Ensure output prints `BUILD SUCCESS` with zero Java compilation errors.
 
----
-
-## 🏃 Running Applications
-
-### Start Backend Dev Server
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-The server will run on `http://localhost:8080`.
-
-### Start Frontend Dev Server
+### 2. Frontend Build Check
+Navigate to the frontend directory and run:
 ```bash
 cd frontend
-npm run dev
+npm run build
 ```
-The server will run on `http://localhost:3000`.
+Verify that the Next.js static build succeeds with zero TypeScript type warnings.
 
 ---
 
-## 🏁 Verification Checklists
+## 🧪 Manual Verification Steps
 
-### 1. Build Verification
-Ensure both platforms compile and bundle without error:
-- Backend: `./mvnw clean compile` output should conclude with `BUILD SUCCESS`.
-- Frontend: `npm run build` should successfully generate pages without TypeScript or build issues.
+Verify the specific stabilization fixes implemented in this phase:
 
-### 2. Schema Creation
-Upon running the backend, Hibernate's `spring.jpa.hibernate.ddl-auto=update` automatically checks PostgreSQL and creates the `users` table schema if not already present.
+### 1. Messaging Direct URL Navigation
+- **Test Case**: Navigate directly to `/messages?conversationId=<existing_conversation_uuid>` in the browser.
+- **Expected Outcome**:
+  - The page loads without throwing a `400 Bad Request` error.
+  - The chat room context is successfully fetched via the new `GET /api/chat/conversations/{id}` REST API endpoint.
+  - The active conversation is selected and the message list loads.
+
+### 2. Database Indexes Validation
+- **Test Case**: Search classmate profiles in the directory or load message history.
+- **Expected Outcome**:
+  - Hibernate logs query execution plans utilizing indexes `idx_messages_conversation_created`, `idx_notifications_recipient_created`, and `idx_comments_post_created`.
+  - Database retrieves elements without executing sequential full-table scans.
+
+### 3. Hydration Mismatch Silence Check
+- **Test Case**: Open the browser's developer console (F12) and inspect the console logs while loading the Dashboard, Directory, and Alumni Profile pages.
+- **Expected Outcome**:
+  - Zero hydration mismatch warnings (`Text content did not match...`) regarding formatted dates/times.
+  - Date and time fields render correctly using client-side locale formats.

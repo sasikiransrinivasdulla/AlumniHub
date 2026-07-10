@@ -44,6 +44,25 @@ export async function getOrCreateConversation(targetUserId: string): Promise<Con
   return response.json();
 }
 
+export async function getConversation(conversationId: string): Promise<ConversationDto> {
+  const token = getAuthToken();
+  if (!token) throw new Error("No authentication token found.");
+
+  const response = await fetch(`${API_BASE}/api/chat/conversations/${conversationId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorMsg = await response.text();
+    throw new Error(errorMsg || "Failed to load conversation details.");
+  }
+
+  return response.json();
+}
+
 export async function getConversations(): Promise<ConversationDto[]> {
   const token = getAuthToken();
   if (!token) throw new Error("No authentication token found.");

@@ -90,7 +90,7 @@ export default function AchievementsPage() {
                     <p className="text-[12px] text-neutral-400 font-light leading-relaxed">{a.description}</p>
                     <div className="flex items-center gap-3 text-[10px] text-neutral-500 uppercase tracking-wider">
                       {a.companyOrInstitution && <span>{a.companyOrInstitution}</span>}
-                      <span>{new Date(a.date).toLocaleDateString()}</span>
+                      <span suppressHydrationWarning>{new Date(a.date).toLocaleDateString()}</span>
                     </div>
                     {a.link && <a href={a.link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:underline uppercase tracking-wider">View More ↗</a>}
                     {user && a.userId === user.id && <button onClick={() => handleDelete(a.id)} className="text-[10px] text-red-400 hover:text-red-300 uppercase tracking-wider cursor-pointer mt-1">Delete</button>}

@@ -610,7 +610,7 @@ export default function ProfilePage() {
               <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
                   <h2 className="text-[18px] font-light tracking-[0.15em] uppercase leading-tight">Memory Detail</h2>
-                  <p className="text-[11px] tracking-wider text-neutral-450 mt-1 uppercase">
+                  <p suppressHydrationWarning className="text-[11px] tracking-wider text-neutral-450 mt-1 uppercase">
                     Shared {formatTime(activePostForComments.createdAt)}
                   </p>
                 </div>
@@ -688,7 +688,7 @@ export default function ProfilePage() {
                                 <span className="text-[11px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
                               )}
                             </div>
-                            <span className="text-[10px] text-neutral-550 block mt-1">{formatTime(comment.createdAt)}</span>
+                            <span suppressHydrationWarning className="text-[10px] text-neutral-550 block mt-1">{formatTime(comment.createdAt)}</span>
                             <p className="text-[13px] font-light text-neutral-200 mt-1.5 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
                           </div>
                         </div>

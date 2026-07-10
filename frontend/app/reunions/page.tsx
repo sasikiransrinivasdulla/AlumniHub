@@ -88,7 +88,7 @@ export default function ReunionsPage() {
                     </div>
                     {reunion.description && <p className="text-[12px] text-neutral-400 font-light leading-relaxed">{reunion.description}</p>}
                     <div className="flex items-center gap-3 text-[10px] text-neutral-500 uppercase tracking-wider">
-                      <span>{new Date(reunion.date).toLocaleDateString()}</span>
+                      <span suppressHydrationWarning>{new Date(reunion.date).toLocaleDateString()}</span>
                       {reunion.location && <span>• {reunion.location}</span>}
                     </div>
                     <button onClick={() => handleRsvp(reunion.id, reunion.attending)} className={`py-2 px-5 text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-colors ${reunion.attending ? "border border-white/10 text-white hover:bg-white/5" : "bg-white text-black hover:bg-neutral-200"}`}>{reunion.attending ? "Withdraw" : "Attend"}</button>

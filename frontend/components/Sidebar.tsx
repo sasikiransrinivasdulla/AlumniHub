@@ -231,7 +231,7 @@ export default function Sidebar({ user }: SidebarProps) {
                   <span className="font-semibold text-white">{notif.senderName || "Alumni Hub"}</span>{" "}
                   {notif.text}
                 </p>
-                <span className="text-[10px] text-neutral-500 mt-1 block tracking-wider uppercase font-light">
+                <span suppressHydrationWarning className="text-[10px] text-neutral-500 mt-1 block tracking-wider uppercase font-light">
                   {new Date(notif.createdAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>

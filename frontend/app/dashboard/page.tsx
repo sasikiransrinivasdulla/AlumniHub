@@ -615,7 +615,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="flex items-center justify-between text-[10px] text-neutral-500 tracking-wider">
-                    <span>Posted {new Date(motd.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</span>
+                    <span suppressHydrationWarning>Posted {new Date(motd.createdAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</span>
                     <button
                       onClick={() => handleOpenCommentsModal(motd)}
                       className="underline hover:text-white transition-colors cursor-pointer uppercase font-semibold"
@@ -675,7 +675,7 @@ export default function Dashboard() {
                           <span className="text-[12px] text-neutral-450 hidden sm:inline">• {post.userCurrentPosition}</span>
                         )}
                       </div>
-                      <span className="text-[10px] text-neutral-500 block mt-1 leading-none uppercase font-light tracking-wider">{formatTime(post.createdAt)}</span>
+                      <span suppressHydrationWarning className="text-[10px] text-neutral-500 block mt-1 leading-none uppercase font-light tracking-wider">{formatTime(post.createdAt)}</span>
                     </div>
                   </div>
 
@@ -1050,7 +1050,7 @@ export default function Dashboard() {
                                 <span className="text-[11px] text-neutral-500 hidden sm:inline">• {comment.userCurrentPosition}</span>
                               )}
                             </div>
-                            <span className="text-[10px] text-neutral-550 block mt-1 uppercase font-light tracking-wider">{formatTime(comment.createdAt)}</span>
+                            <span suppressHydrationWarning className="text-[10px] text-neutral-550 block mt-1 uppercase font-light tracking-wider">{formatTime(comment.createdAt)}</span>
                             <p className="text-[13px] font-light text-neutral-200 mt-2 leading-relaxed whitespace-pre-wrap">{comment.comment}</p>
                           </div>
                         </div>
