@@ -13,17 +13,16 @@
 }
 
 html {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
-  height: 100%;
+  min-height: 100%;
   background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.035) 0%, rgba(0, 0, 0, 0) 55%),
               radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.01) 0%, rgba(0, 0, 0, 0) 35%),
               #000000;
   color: var(--foreground);
   margin: 0;
-  overflow: hidden;
 }
 
 /* Custom Scrollbar Refinement */

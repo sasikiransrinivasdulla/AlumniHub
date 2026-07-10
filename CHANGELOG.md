@@ -13,6 +13,7 @@ All notable changes to the **Alumni Hub** ecosystem will be documented in this f
 ### Bug Fixes
 - **Conversation Load**: Solved critical bug in `/messages` where direct URL navigation with `conversationId` threw a `400 Bad Request` by replacing the incorrect user lookup with the new `getConversation` retrieval utility.
 - **Next.js Hydration Mismatch**: Added `suppressHydrationWarning` to date formats across dashboard, directory, alumni profiles, events, messages, reunions, achievements, and notifications to silent React console warnings on client-side hydration.
+- **Scroll Layout Refactoring**: Replaced rigid global `overflow: hidden` scroll blocks with standard document scroll on Feed, Directory, Profile, Events, Jobs, Mentorship, Referrals, and Achievements pages. Verified `position: fixed` aside sidebar keeps the left menu sticky while main content is independently scrollable, and added internal `overflow-y-auto` scroll containment on the Sidebar itself.
 
 ### Documentation
 - Completely redesigned project documentation inside `docs/` and root `README.md`.

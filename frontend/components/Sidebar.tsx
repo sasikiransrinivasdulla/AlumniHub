@@ -379,7 +379,7 @@ export default function Sidebar({ user }: SidebarProps) {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel flex flex-col justify-between py-10 px-5 z-40 select-none border-y-0 border-l-0">
+      <aside className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel flex flex-col justify-between py-10 px-5 z-40 select-none border-y-0 border-l-0 overflow-y-auto">
         <div className="flex flex-col space-y-12">
           <Link href="/dashboard" className="flex items-center gap-4 px-2">
             <div className="relative w-10 h-10 flex-shrink-0">

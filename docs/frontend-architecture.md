@@ -36,6 +36,16 @@ if (cachedFeed) {
 
 ---
 
+## 📐 Layout & Scroll Architecture
+
+The platform uses a modular scrolling layout that balances default document scrolling with specific application layouts:
+
+- **Root Document Scroll**: The root document (`html` and `body`) does not enforce global `overflow: hidden`, allowing standard pages (Feed, Directory, Profiles, Events, Jobs) to scroll using the browser's native window scrollbar.
+- **Fixed Sidebar**: The [Sidebar](file:///home/sasikiransrinivas/Projects/AlumniHub/frontend/components/Sidebar.tsx) component uses `position: fixed` to stay locked to the left edge of the screen. An `overflow-y-auto` layout constraint ensures that if the sidebar's navigation items exceed the viewport height, it scrolls independently.
+- **App-like Pane Layout (Chat)**: The direct messaging page [messages/page.tsx](file:///home/sasikiransrinivas/Projects/AlumniHub/frontend/app/messages/page.tsx) uses `h-screen overflow-hidden` to clamp the page to exactly `100vh`. This allows the inbox list pane and the active message channel pane to scroll independently, mimicking a native desktop chat application.
+
+---
+
 ## 🎨 Liquid Glass Design System
 
 The visual theme is defined in [globals.css](file:///home/sasikiransrinivas/Projects/AlumniHub/frontend/app/globals.css) and relies on these glassmorphic utility classes:

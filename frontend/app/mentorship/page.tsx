@@ -86,9 +86,9 @@ export default function MentorshipPage() {
   ];
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex">
       <Sidebar user={user} />
-      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+      <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col relative select-none">
         <div className="z-10 w-full max-w-4xl mx-auto px-6 md:px-12 py-10 md:py-16 space-y-8">
           <div className="border-b border-white/5 pb-4">
             <h1 className="text-[20px] md:text-[22px] font-light tracking-[0.15em] uppercase text-white">Mentorship</h1>

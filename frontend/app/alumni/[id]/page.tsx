@@ -215,9 +215,9 @@ export default function AlumniProfile({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="h-screen bg-black text-white flex overflow-hidden">
+      <div className="min-h-screen bg-black text-white flex">
         <div className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel border-y-0 border-l-0" />
-        <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col">
+        <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col">
           <div className="w-full max-w-2xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-6">
             {/* Breadcrumb skeleton */}
             <div className="flex justify-between items-center border-b border-white/5 pb-4">
@@ -281,10 +281,10 @@ export default function AlumniProfile({ params }: PageProps) {
   if (!alumni) return null;
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex">
       <Sidebar user={currentUser} />
 
-      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+      <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col relative select-none">
         <div className="z-10 w-full max-w-2xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-6">
           
           {/* Navigation Breadcrumb */}

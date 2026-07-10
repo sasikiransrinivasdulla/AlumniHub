@@ -417,10 +417,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-black text-white flex overflow-hidden">
+      <div className="min-h-screen bg-black text-white flex">
         {/* Skeleton sidebar strip */}
         <div className="fixed left-0 top-0 bottom-0 w-20 md:w-72 glass-panel border-y-0 border-l-0" />
-        <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col">
+        <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col">
           <div className="w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">
             {/* Header skeleton */}
             <div className="flex justify-between items-center border-b border-white/5 pb-6">
@@ -467,10 +467,10 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex">
       <Sidebar user={user} />
 
-      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+      <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col relative select-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
 
         <div className="z-10 w-full max-w-3xl mx-auto px-6 md:px-12 py-10 md:py-16 flex flex-col space-y-8">

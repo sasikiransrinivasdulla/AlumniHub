@@ -74,10 +74,10 @@ ${shareUrl}`;
   if (!currentUser) return null;
 
   return (
-    <div className="h-screen bg-black text-white flex overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex">
       <Sidebar user={currentUser} />
 
-      <main className="flex-1 h-screen overflow-y-auto pl-20 md:pl-72 flex flex-col relative select-none">
+      <main className="flex-1 min-h-screen pl-20 md:pl-72 flex flex-col relative select-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.01)_0%,transparent_100%)] pointer-events-none" />
 
         <div className="z-10 w-full max-w-xl mx-auto px-6 md:px-8 py-10 md:py-16 flex flex-col space-y-6">
